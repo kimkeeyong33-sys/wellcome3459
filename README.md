@@ -8,6 +8,8 @@
 - 경매 등록 (시작가, 최소 입찰 단위, 즉시구매가, 시작/마감 일시)
 - 실시간 입찰 (동시 입찰 시 CAS 방식으로 정합성 보장)
 - 마감 시각 도달 시 자동 낙찰 처리, 즉시구매가 도달 시 즉시 낙찰
+- 상품 이미지 업로드 (로컬 디스크 저장, 다중 이미지)
+- 관리자 기업 인증 승인/취소, 인증기업 배지 노출
 - 내 입찰 현황 / 내가 등록한 경매 조회
 
 결제(PG) 연동은 이번 단계 범위에 포함되지 않았습니다.
@@ -19,12 +21,14 @@ npm install
 
 # .env 에 DATABASE_URL, JWT_SECRET 설정 (PostgreSQL 필요)
 npx prisma migrate dev
-npx tsx prisma/seed.ts   # 카테고리 시드 데이터
+npm run seed   # 카테고리 시드 데이터 + 관리자 계정 생성
 
 npm run dev
 ```
 
 http://localhost:3000 에서 확인할 수 있습니다.
+
+시드 스크립트가 관리자 계정(`admin@example.com` / `admin1234`)을 생성합니다. 로그인 후 `/admin/companies`에서 기업 인증을 승인할 수 있습니다. 운영 환경에서는 반드시 비밀번호를 변경하세요.
 
 ## 기술 스택
 
@@ -38,9 +42,10 @@ http://localhost:3000 에서 확인할 수 있습니다.
 ```
 src/
   app/
-    api/            REST API 라우트 (auth, auctions, categories, me)
+    api/            REST API 라우트 (auth, auctions, categories, me, upload, admin)
     auctions/[id]/  경매 상세 + 입찰 페이지
     auctions/new/   경매 등록 페이지 (판매기업)
+    admin/companies/ 기업 인증 관리 페이지 (관리자)
     login/ register/ mypage/
   lib/
     prisma.ts       Prisma Client 싱글턴
@@ -55,7 +60,6 @@ prisma/
 ## 향후 확장 아이디어
 
 - PG 결제 연동 (낙찰 후 결제/정산)
-- 이미지 업로드 (상품 사진)
-- 기업 인증 승인 플로우 (관리자 검수)
+- 이미지 업로드를 S3 등 오브젝트 스토리지로 이관 (현재는 `public/uploads` 로컬 디스크)
 - 알림 (입찰 경쟁, 낙찰 알림 이메일/푸시)
 - 자동 낙찰 처리를 cron/워커로 이관 (현재는 API 호출 시점에 지연 평가)

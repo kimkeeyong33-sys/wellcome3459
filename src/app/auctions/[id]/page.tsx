@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import type { AuctionDetail } from "@/lib/types";
 import { formatWon, formatDateTime, formatRemaining, STATUS_LABEL } from "@/lib/format";
@@ -81,7 +82,23 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
         <h1 className="mb-2 text-2xl font-bold">{auction.title}</h1>
         <p className="mb-4 text-sm text-gray-500">
           판매자: {auction.seller.company?.name ?? auction.seller.name}
+          {auction.seller.company?.verified && (
+            <span className="ml-1 rounded bg-blue-50 px-1 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+              인증기업
+            </span>
+          )}
         </p>
+
+        {auction.images.length > 0 && (
+          <div className="mb-6 flex flex-wrap gap-2">
+            {auction.images.map((url) => (
+              <div key={url} className="relative h-32 w-32 overflow-hidden rounded border border-black/10 dark:border-white/15">
+                <Image src={url} alt="" fill className="object-cover" unoptimized />
+              </div>
+            ))}
+          </div>
+        )}
+
         <p className="mb-6 whitespace-pre-wrap text-sm leading-relaxed">{auction.description}</p>
 
         <h2 className="mb-2 font-semibold">입찰 내역</h2>

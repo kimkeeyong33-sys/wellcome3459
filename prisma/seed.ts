@@ -1,4 +1,5 @@
 import "dotenv/config";
+import bcrypt from "bcryptjs";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
@@ -11,6 +12,21 @@ async function main() {
     await prisma.category.upsert({ where: { name }, create: { name }, update: {} });
   }
   console.log(`Seeded ${categories.length} categories.`);
+
+  const adminEmail = "admin@example.com";
+  const adminPassword = "admin1234";
+  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
+  if (!existingAdmin) {
+    await prisma.user.create({
+      data: {
+        email: adminEmail,
+        passwordHash: await bcrypt.hash(adminPassword, 10),
+        name: "관리자",
+        role: "ADMIN",
+      },
+    });
+    console.log(`Seeded admin account: ${adminEmail} / ${adminPassword} (change this in production)`);
+  }
 }
 
 main()

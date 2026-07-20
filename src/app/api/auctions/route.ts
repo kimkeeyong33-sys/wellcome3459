@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     },
     include: {
       category: true,
-      seller: { select: { id: true, name: true, company: { select: { name: true } } } },
+      seller: { select: { id: true, name: true, company: { select: { name: true, verified: true } } } },
       _count: { select: { bids: true } },
     },
     orderBy: { createdAt: "desc" },

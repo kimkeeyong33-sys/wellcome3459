@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# user-uploaded content (local disk storage for dev; swap for object storage in prod)
+/public/uploads

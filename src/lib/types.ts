@@ -13,7 +13,7 @@ export interface AuctionListItem {
   endAt: string;
   status: AuctionStatus;
   category: { id: string; name: string } | null;
-  seller: { id: string; name: string; company: { name: string } | null };
+  seller: { id: string; name: string; company: { name: string; verified: boolean } | null };
   _count: { bids: number };
 }
 

@@ -10,7 +10,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     where: { id },
     include: {
       category: true,
-      seller: { select: { id: true, name: true, company: { select: { name: true } } } },
+      seller: { select: { id: true, name: true, company: { select: { name: true, verified: true } } } },
       winner: { select: { id: true, name: true } },
       bids: {
         orderBy: { createdAt: "desc" },

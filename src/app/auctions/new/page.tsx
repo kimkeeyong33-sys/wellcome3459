@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 
 interface Category {
@@ -19,6 +20,8 @@ export default function NewAuctionPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [images, setImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -51,6 +54,33 @@ export default function NewAuctionPage() {
     }
   }, [authLoading, user, router]);
 
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    setError(null);
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const body = new FormData();
+        body.append("file", file);
+        const res = await fetch("/api/upload", { method: "POST", body });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error ?? "이미지 업로드에 실패했습니다.");
+          continue;
+        }
+        setImages((prev) => [...prev, data.url]);
+      }
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function removeImage(url: string) {
+    setImages((prev) => prev.filter((u) => u !== url));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -62,6 +92,7 @@ export default function NewAuctionPage() {
         body: JSON.stringify({
           title: form.title,
           description: form.description,
+          images,
           categoryId: form.categoryId || undefined,
           startPrice: Number(form.startPrice),
           minIncrement: Number(form.minIncrement),
@@ -103,6 +134,26 @@ export default function NewAuctionPage() {
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
+        </Field>
+        <Field label="상품 이미지 (jpg/png/webp, 5MB 이하)">
+          <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleFileChange} />
+          {uploading && <p className="mt-1 text-xs text-gray-500">업로드 중...</p>}
+          {images.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {images.map((url) => (
+                <div key={url} className="relative h-20 w-20 overflow-hidden rounded border border-black/10 dark:border-white/15">
+                  <Image src={url} alt="" fill className="object-cover" unoptimized />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(url)}
+                    className="absolute right-0 top-0 flex h-5 w-5 items-center justify-center bg-black/60 text-xs text-white"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </Field>
         <Field label="카테고리">
           <select

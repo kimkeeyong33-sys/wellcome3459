@@ -26,6 +26,11 @@ export function Header() {
               마이페이지
             </Link>
           )}
+          {!loading && user?.role === "ADMIN" && (
+            <Link href="/admin/companies" className="hover:underline">
+              기업 인증 관리
+            </Link>
+          )}
           {!loading && !user && (
             <>
               <Link href="/login" className="hover:underline">
