@@ -18,6 +18,11 @@
   --font-mono: "Roboto Mono", monospace;
 }
 
+html {
+  /* 50~60대 사용자를 고려해 기본 글자 크기를 살짝 키움 (16px → 18px, 전체 비율 유지) */
+  font-size: 112.5%;
+}
+
 html,
 body {
   background: #f5f6f8;
