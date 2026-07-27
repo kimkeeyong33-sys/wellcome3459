@@ -1,33 +1,43 @@
-export function formatWon(value: string | number) {
-  return `${Math.round(Number(value)).toLocaleString("ko-KR")}원`;
+export function formatCountdown(closesAt: string): { label: string; urgent: boolean } {
+  const diffMs = new Date(closesAt).getTime() - Date.now();
+  if (diffMs <= 0) return { label: "마감", urgent: true };
+
+  const totalMin = Math.floor(diffMs / 60000);
+  const days = Math.floor(totalMin / (60 * 24));
+  const hours = Math.floor((totalMin % (60 * 24)) / 60);
+  const minutes = totalMin % 60;
+  const seconds = Math.floor((diffMs % 60000) / 1000);
+
+  const urgent = diffMs < 1000 * 60 * 60 * 3; // 3시간 미만이면 긴급
+
+  if (days >= 1) {
+    return { label: `${days}일 ${hours}:${String(minutes).padStart(2, "0")}`, urgent };
+  }
+  return {
+    label: `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(
+      seconds
+    ).padStart(2, "0")}`,
+    urgent,
+  };
 }
 
-export function formatDateTime(value: string | Date) {
-  return new Date(value).toLocaleString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+export function formatPrice(n: number) {
+  return n.toLocaleString("ko-KR") + "원";
 }
 
-export function formatRemaining(endAt: string | Date) {
-  const ms = new Date(endAt).getTime() - Date.now();
-  if (ms <= 0) return "마감";
-  const totalMinutes = Math.floor(ms / 60000);
-  const days = Math.floor(totalMinutes / (60 * 24));
-  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-  const minutes = totalMinutes % 60;
-  if (days > 0) return `${days}일 ${hours}시간 남음`;
-  if (hours > 0) return `${hours}시간 ${minutes}분 남음`;
-  return `${minutes}분 남음`;
+export function percentOff(original: number, deal: number) {
+  return Math.round(((original - deal) / original) * 100);
 }
 
-export const STATUS_LABEL: Record<string, string> = {
-  DRAFT: "임시저장",
-  SCHEDULED: "예정",
-  ACTIVE: "진행중",
-  ENDED: "종료",
-  CANCELLED: "취소",
-};
+// 가격 입력창용: 숫자만 남기고 천단위 콤마를 붙여서 보여줍니다.
+export function formatPriceInput(raw: string) {
+  const digits = raw.replace(/[^\d]/g, "");
+  if (!digits) return "";
+  return Number(digits).toLocaleString("ko-KR");
+}
+
+// 콤마가 섞인 입력값에서 순수 숫자만 추출합니다 (제출 시 사용).
+export function parsePriceInput(raw: string) {
+  const digits = raw.replace(/[^\d]/g, "");
+  return digits ? Number(digits) : undefined;
+}

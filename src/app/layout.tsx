@@ -1,39 +1,39 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext";
-import { Header } from "@/components/Header";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
-  title: "B2B Auction",
-  description: "기업간 경매 거래 플랫폼",
+  title: "덤핑점핑 · Powered by JumpingBid",
+  description: "B2B 덤핑 재고 정보를 가장 빠르게 알려드립니다. (JumpingBid AI 거래 플랫폼)",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "덤핑점핑",
+  },
+  icons: {
+    apple: "/icon-192.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0B2540",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html
-      lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <AuthProvider>
-          <Header />
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
-        </AuthProvider>
+    <html lang="ko">
+      <body className="font-sans overflow-x-hidden">
+        <div className="mx-auto max-w-md min-h-screen bg-white shadow-sm overflow-x-hidden">
+          {children}
+        </div>
       </body>
     </html>
   );

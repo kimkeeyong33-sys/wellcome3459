@@ -1,41 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { randomUUID } from "crypto";
-import { getUserFromRequest } from "@/lib/auth";
+import { createClient } from "@supabase/supabase-js";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
-const ALLOWED_TYPES: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
-const MAX_SIZE = 5 * 1024 * 1024;
+const BUCKET = "deal-images";
+const MAX_VIDEO_BYTES = 25 * 1024 * 1024; // 15초 영상은 대체로 이 안에 들어옵니다
 
 export async function POST(req: NextRequest) {
-  const payload = getUserFromRequest(req);
-  if (!payload) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  if (payload.role !== "SELLER" && payload.role !== "ADMIN") {
-    return NextResponse.json({ error: "판매자만 이미지를 업로드할 수 있습니다." }, { status: 403 });
-  }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  const formData = await req.formData().catch(() => null);
-  const file = formData?.get("file");
-  if (!(file instanceof File)) {
+  const formData = await req.formData();
+  const files = formData.getAll("files") as File[];
+  const video = formData.get("video") as File | null;
+
+  if (!files.length && !video) {
     return NextResponse.json({ error: "파일이 없습니다." }, { status: 400 });
   }
-  const ext = ALLOWED_TYPES[file.type];
-  if (!ext) {
-    return NextResponse.json({ error: "jpg/png/webp 파일만 업로드 가능합니다." }, { status: 400 });
-  }
-  if (file.size > MAX_SIZE) {
-    return NextResponse.json({ error: "파일 크기는 5MB 이하만 가능합니다." }, { status: 400 });
+
+  if (!supabaseUrl || !serviceKey) {
+    // 데모 모드: 실제 저장 없이 빈 값 반환 (화면에서는 로컬 미리보기만 보임)
+    return NextResponse.json({ urls: [], videoUrl: null, demo: true });
   }
 
-  await mkdir(UPLOAD_DIR, { recursive: true });
-  const filename = `${randomUUID()}.${ext}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(UPLOAD_DIR, filename), buffer);
+  const supabaseAdmin = createClient(supabaseUrl, serviceKey);
+  const urls: string[] = [];
 
-  return NextResponse.json({ url: `/uploads/${filename}` });
+  for (const file of files.slice(0, 4)) {
+    // 매물당 최대 4장으로 제한
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const arrayBuffer = await file.arrayBuffer();
+
+    const { error } = await supabaseAdmin.storage
+      .from(BUCKET)
+      .upload(path, arrayBuffer, { contentType: file.type, upsert: false });
+
+    if (!error) {
+      const { data } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path);
+      urls.push(data.publicUrl);
+    }
+  }
+
+  let videoUrl: string | null = null;
+  if (video && video.size <= MAX_VIDEO_BYTES) {
+    const ext = video.name.split(".").pop() || "webm";
+    const path = `video-${crypto.randomUUID()}.${ext}`;
+    const arrayBuffer = await video.arrayBuffer();
+
+    const { error } = await supabaseAdmin.storage
+      .from(BUCKET)
+      .upload(path, arrayBuffer, { contentType: video.type || "video/webm", upsert: false });
+
+    if (!error) {
+      const { data } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path);
+      videoUrl = data.publicUrl;
+    }
+  }
+
+  return NextResponse.json({ urls, videoUrl });
 }

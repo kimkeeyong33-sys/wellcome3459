@@ -1,72 +1,237 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { AuctionCard } from "@/components/AuctionCard";
-import type { AuctionListItem } from "@/lib/types";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { mockCategories, mockDeals, categoryIcons, categoryColors, type Deal } from "@/lib/mockData";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { formatPrice } from "@/lib/format";
+import SplashScreen from "@/components/SplashScreen";
 
-const STATUS_TABS = [
-  { value: "ACTIVE", label: "진행중" },
-  { value: "SCHEDULED", label: "예정" },
-  { value: "ENDED", label: "종료" },
-  { value: "", label: "전체" },
-] as const;
+const TODAY_BADGE_THRESHOLD = 5; // 이보다 적으면 "오늘 N건" 배너를 아예 숨김 (빈약한 숫자 노출 방지)
 
-export default function HomePage() {
-  const [auctions, setAuctions] = useState<AuctionListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<string>("ACTIVE");
-  const [q, setQ] = useState("");
+export default function Home() {
+  const [todayCount, setTodayCount] = useState(0);
+  const [preview, setPreview] = useState<Deal[]>(
+    isSupabaseConfigured ? [] : mockDeals.filter((d) => d.status !== "closed").slice(0, 3)
+  );
 
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (status) params.set("status", status);
-    if (q) params.set("q", q);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch on filter change
-    setLoading(true);
-    fetch(`/api/auctions?${params.toString()}`)
-      .then((res) => res.json())
-      .then((data) => setAuctions(data.auctions ?? []))
-      .finally(() => setLoading(false));
-  }, [status, q]);
+    if (!isSupabaseConfigured || !supabase) return; // 데모 모드: 실제 집계 없이 조용히 숨김
 
-  const empty = useMemo(() => !loading && auctions.length === 0, [loading, auctions]);
+    (async () => {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const [{ count }, { data: previewData }] = await Promise.all([
+        supabase
+          .from("deals")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "active")
+          .gte("created_at", todayStart.toISOString()),
+        supabase
+          .from("deals")
+          .select(
+            "id, title, deal_price, original_price, total_qty, remaining_qty, closes_at, location, images, categories(name), regions(name)"
+          )
+          .eq("status", "active")
+          .gt("closes_at", new Date().toISOString())
+          .order("created_at", { ascending: false })
+          .limit(3),
+      ]);
+
+      setTodayCount(count ?? 0);
+      if (previewData) {
+        setPreview(
+          previewData.map((d) => ({
+            id: d.id,
+            title: d.title,
+            category: (d.categories as unknown as { name: string } | null)?.name ?? "기타",
+            region: (d.regions as unknown as { name: string } | null)?.name ?? "",
+            location: d.location ?? "",
+            original_price: d.original_price,
+            deal_price: d.deal_price,
+            total_qty: d.total_qty,
+            remaining_qty: d.remaining_qty,
+            closes_at: d.closes_at,
+            images: d.images ?? [],
+          }))
+        );
+      }
+    })();
+  }, []);
 
   return (
-    <div>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold">B2B 경매</h1>
-        <input
-          className="input w-full sm:w-72"
-          placeholder="상품명 검색"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-      </div>
+    <SplashScreen>
+    <main className="flex flex-col min-h-screen">
+      <div
+        className="px-5 pt-6 pb-7 text-white"
+        style={{ background: "linear-gradient(135deg, #0B2540, #1B3A5C)" }}
+      >
+        <div className="flex items-center gap-2 mb-5">
+          <div className="bg-white rounded-xl px-3 py-2 inline-block">
+            <img src="/images/logo.png" alt="덤핑점핑" className="h-10 w-auto" />
+          </div>
+          <span className="text-white/50 text-[11px] tracking-wide self-end mb-1">
+            Powered by JumpingBid
+          </span>
+        </div>
 
-      <div className="mb-6 flex gap-2">
-        {STATUS_TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setStatus(tab.value)}
-            className={`rounded-md px-3 py-1.5 text-sm ${
-              status === tab.value
-                ? "bg-blue-600 text-white"
-                : "border border-black/15 dark:border-white/20"
-            }`}
+        {/* 신뢰 지표 — 실제 IR 확인 수치만 표기 */}
+        <div className="inline-flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1.5 mb-4">
+          <span style={{ color: "#5EEAD4" }}>✔</span>
+          <span className="text-xs font-bold text-white/90">전국 B2B 사업자 830명 이용 중</span>
+        </div>
+
+        <h1 className="font-display text-3xl leading-snug drop-shadow-sm">
+          <span style={{ color: "#F2891F" }}>덤핑매물 최저가</span> 가장 먼저 알려드립니다.
+        </h1>
+        <p className="text-white/85 text-base mt-4 leading-relaxed">
+          관심 카테고리와 지역만 등록하면, 시세보다 낮은 매물이 나올 때 기기 알림으로 바로 알려드립니다.
+        </p>
+
+        {/* 긴급성 — 실제 오늘 등록 건수가 일정 수준 이상일 때만 노출 (빈약한 숫자 노출 방지) */}
+        {todayCount >= TODAY_BADGE_THRESHOLD && (
+          <Link
+            href="/deals"
+            className="inline-flex items-center gap-1.5 mt-4 text-xs font-bold px-3 py-2 rounded-full"
+            style={{ background: "rgba(242,137,31,0.18)", color: "#FBB454" }}
           >
-            {tab.label}
-          </button>
-        ))}
+            🔥 오늘 등록된 덤핑 매물 {todayCount}건 · 지금 확인하기 →
+          </Link>
+        )}
       </div>
 
-      {loading && <p className="text-sm text-gray-500">불러오는 중...</p>}
-      {empty && <p className="text-sm text-gray-500">해당 조건의 경매가 없습니다.</p>}
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {auctions.map((a) => (
-          <AuctionCard key={a.id} auction={a} />
-        ))}
+      <div className="px-5 pt-7">
+        <div className="text-base font-bold text-navy mb-3.5">어떤 재고를 찾고 계세요?</div>
+        <div className="grid grid-cols-3 gap-2.5">
+          {mockCategories.map((c) => {
+            const color = categoryColors[c];
+            return (
+              <Link
+                key={c}
+                href={`/deals?category=${encodeURIComponent(c)}`}
+                className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-1.5 text-center transition-transform active:scale-95"
+                style={{ background: color.bg, border: `1.5px solid ${color.solid}33`, minHeight: "92px" }}
+              >
+                <span className="text-3xl leading-none">{categoryIcons[c]}</span>
+                <span className="text-sm font-bold leading-tight" style={{ color: color.text }}>
+                  {c}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
-    </div>
+
+      {/* 매물 예시 — 실제로 어떤 물건이 올라오는지 미리 보여줌 */}
+      {preview.length > 0 && (
+        <div className="px-5 pt-8">
+          <div className="text-base font-bold text-navy mb-3.5">이런 매물이 올라와요</div>
+          <div className="flex flex-col gap-2.5">
+            {preview.map((d) => {
+              const color = categoryColors[d.category] ?? categoryColors["기타"];
+              const discountPct = d.original_price
+                ? Math.round(((d.original_price - d.deal_price) / d.original_price) * 100)
+                : 0;
+              return (
+                <Link
+                  key={d.id}
+                  href={`/deals/${d.id}`}
+                  className="flex items-center gap-3 rounded-2xl border border-gray200 px-3.5 py-3 active:scale-[0.98] transition-transform"
+                >
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+                    style={{ background: color.bg }}
+                  >
+                    {categoryIcons[d.category] ?? "🗂️"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-bold text-navy truncate">{d.title}</div>
+                    <div className="text-xs text-gray500 mt-0.5">
+                      {d.category} · {d.location}
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-sm font-black text-navy">{formatPrice(d.deal_price)}</div>
+                    {discountPct > 0 && (
+                      <div className="text-xs font-bold" style={{ color: "#C2410C" }}>
+                        -{discountPct}%
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 보조 CTA — 스크롤 영역 안, 메인 CTA는 하단에 고정 */}
+      <div className="mt-9 px-5 flex flex-col gap-3" style={{ paddingBottom: "108px" }}>
+        <Link
+          href="/deals"
+          className="border-2 border-gray200 text-navy text-center font-bold rounded-2xl text-base"
+          style={{ padding: "15px 0" }}
+        >
+          오늘 등록된 매물 보기
+        </Link>
+
+        <div className="grid grid-cols-2 gap-2.5 mt-1">
+          <Link
+            href="/support"
+            className="text-center font-bold rounded-xl text-sm"
+            style={{ border: "1.5px solid #E4E7EB", color: "#6B7480", padding: "13px 0" }}
+          >
+            🏛️ 정부지원금
+          </Link>
+          <Link
+            href="/logistics"
+            className="text-center font-bold rounded-xl text-sm"
+            style={{ border: "1.5px solid #E4E7EB", color: "#6B7480", padding: "13px 0" }}
+          >
+            🚚 점핑전국물류
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5 mt-2">
+          <Link
+            href="/buy"
+            className="flex flex-col rounded-2xl px-4 py-3.5"
+            style={{ background: "#F5F6F8" }}
+          >
+            <div className="text-sm font-bold text-navy">🔍 이런 재고 찾습니다</div>
+            <div className="text-xs text-gray500 mt-0.5">구매 희망 등록</div>
+          </Link>
+          <Link
+            href="/sell"
+            className="flex flex-col rounded-2xl px-4 py-3.5"
+            style={{ background: "#F5F6F8" }}
+          >
+            <div className="text-sm font-bold text-navy">📦 재고가 남으셨나요?</div>
+            <div className="text-xs text-gray500 mt-0.5">판매 등록은 무료</div>
+          </Link>
+        </div>
+      </div>
+
+      {/* 메인 CTA — 항상 화면 하단에 고정 */}
+      <div
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-5 pb-6 pt-3 bg-white"
+        style={{ boxShadow: "0 -8px 20px rgba(11,37,64,0.08)" }}
+      >
+        <Link
+          href="/signup"
+          className="block text-white text-center font-bold rounded-2xl shadow-lg"
+          style={{
+            background: "linear-gradient(135deg, #D9531E, #F2891F)",
+            padding: "20px 0",
+            fontSize: "19px",
+            boxShadow: "0 10px 24px rgba(217,83,30,0.35)",
+          }}
+        >
+          🔔 무료 알림받기
+        </Link>
+      </div>
+    </main>
+    </SplashScreen>
   );
 }
