@@ -6,6 +6,7 @@ import { mockCategories, mockDeals, categoryIcons, categoryColors, type Deal } f
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { formatPrice } from "@/lib/format";
 import SplashScreen from "@/components/SplashScreen";
+import InstallAppButton from "@/components/InstallAppButton";
 
 const TODAY_BADGE_THRESHOLD = 5; // 이보다 적으면 "오늘 N건" 배너를 아예 숨김 (빈약한 숫자 노출 방지)
 
@@ -101,7 +102,11 @@ export default function Home() {
         )}
       </div>
 
-      <div className="px-5 pt-7">
+      <div className="px-5 pt-5">
+        <InstallAppButton />
+      </div>
+
+      <div className="px-5 pt-5">
         <div className="text-base font-bold text-navy mb-3.5">어떤 재고를 찾고 계세요?</div>
         <div className="grid grid-cols-3 gap-2.5">
           {mockCategories.map((c) => {
