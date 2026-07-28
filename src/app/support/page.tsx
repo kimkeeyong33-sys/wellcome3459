@@ -43,11 +43,11 @@ function SupportPageInner() {
           </Link>
           <span className="text-white/50 text-[11px] tracking-wide">Powered by JumpingBid</span>
         </div>
-        <div className="flex items-center justify-between">
-          <div className="text-xs font-bold tracking-widest" style={{ color: "#FFD166" }}>
+        <div className="flex items-center justify-between flex-wrap gap-y-1.5">
+          <div className="text-xs font-bold tracking-widest whitespace-nowrap" style={{ color: "#FFD166" }}>
             사업자 회원 전용
           </div>
-          <Link href="/deals" className="text-sm text-white/85 font-bold">
+          <Link href="/deals" className="text-sm text-white/85 font-bold whitespace-nowrap">
             매물 보기 →
           </Link>
         </div>

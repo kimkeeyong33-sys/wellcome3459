@@ -144,16 +144,16 @@ function DealsPageInner() {
           </Link>
           <span className="text-white/50 text-[11px] tracking-wide">Powered by JumpingBid</span>
         </div>
-        <div className="flex items-center justify-between">
-          <div className="text-xs font-bold tracking-widest" style={{ color: "#FFD166" }}>
+        <div className="flex items-center justify-between flex-wrap gap-y-1.5">
+          <div className="text-xs font-bold tracking-widest whitespace-nowrap" style={{ color: "#FFD166" }}>
             오늘의 덤핑 매물
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 whitespace-nowrap">
             <Link href="/mypage" className="text-sm text-white/70 font-bold py-2 -my-2">
               내 정보
             </Link>
             <Link href="/support" className="text-sm font-bold py-2 -my-2" style={{ color: "#FBB454" }}>
-              🏛️ 정부지원금 보기 →
+              🏛️ 정부지원금
             </Link>
           </div>
         </div>
@@ -186,52 +186,64 @@ function DealsPageInner() {
           </button>
         </div>
 
-        <div className="flex gap-2 mt-4 overflow-x-auto pb-1">
-          <button
-            onClick={() => setActiveCat("전체")}
-            className={`text-sm px-4 py-2.5 rounded-full font-bold whitespace-nowrap ${
-              activeCat === "전체" ? "bg-white text-navy" : "text-white"
-            }`}
-            style={activeCat === "전체" ? {} : { background: "rgba(255,255,255,0.22)" }}
-          >
-            전체
-          </button>
-          {mockCategories.map((c) => {
-            const isActive = activeCat === c;
-            return (
-              <button
-                key={c}
-                onClick={() => setActiveCat(c)}
-                className="text-sm px-4 py-2.5 rounded-full font-bold whitespace-nowrap flex items-center gap-1.5"
-                style={
-                  isActive
-                    ? { background: "#fff", color: categoryColors[c].text }
-                    : { background: "rgba(255,255,255,0.22)", color: "#fff" }
-                }
-              >
-                <span className="text-base">{categoryIcons[c]}</span>
-                {c}
-              </button>
-            );
-          })}
+        <div className="relative">
+          <div className="flex gap-2 mt-4 overflow-x-auto pb-1">
+            <button
+              onClick={() => setActiveCat("전체")}
+              className={`text-sm px-4 py-2.5 rounded-full font-bold whitespace-nowrap ${
+                activeCat === "전체" ? "bg-white text-navy" : "text-white"
+              }`}
+              style={activeCat === "전체" ? {} : { background: "rgba(255,255,255,0.22)" }}
+            >
+              전체
+            </button>
+            {mockCategories.map((c) => {
+              const isActive = activeCat === c;
+              return (
+                <button
+                  key={c}
+                  onClick={() => setActiveCat(c)}
+                  className="text-sm px-4 py-2.5 rounded-full font-bold whitespace-nowrap flex items-center gap-1.5"
+                  style={
+                    isActive
+                      ? { background: "#fff", color: categoryColors[c].text }
+                      : { background: "rgba(255,255,255,0.22)", color: "#fff" }
+                  }
+                >
+                  <span className="text-base">{categoryIcons[c]}</span>
+                  {c}
+                </button>
+              );
+            })}
+          </div>
+          <div
+            className="pointer-events-none absolute right-0 top-0 bottom-1 w-10"
+            style={{ background: "linear-gradient(90deg, rgba(30,70,120,0), rgba(30,70,120,0.85))" }}
+          />
         </div>
 
-        <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
-          {["전체", ...mockRegions].map((r) => {
-            const isActive = activeRegion === r;
-            return (
-              <button
-                key={r}
-                onClick={() => setActiveRegion(r)}
-                className={`text-sm px-3.5 py-2 rounded-full font-bold whitespace-nowrap ${
-                  isActive ? "bg-white text-navy" : "text-white"
-                }`}
-                style={isActive ? {} : { background: "rgba(255,255,255,0.18)" }}
-              >
-                {r === "전체" ? "전 지역" : r}
-              </button>
-            );
-          })}
+        <div className="relative">
+          <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
+            {["전체", ...mockRegions].map((r) => {
+              const isActive = activeRegion === r;
+              return (
+                <button
+                  key={r}
+                  onClick={() => setActiveRegion(r)}
+                  className={`text-sm px-3.5 py-2 rounded-full font-bold whitespace-nowrap ${
+                    isActive ? "bg-white text-navy" : "text-white"
+                  }`}
+                  style={isActive ? {} : { background: "rgba(255,255,255,0.18)" }}
+                >
+                  {r === "전체" ? "전 지역" : r}
+                </button>
+              );
+            })}
+          </div>
+          <div
+            className="pointer-events-none absolute right-0 top-0 bottom-1 w-10"
+            style={{ background: "linear-gradient(90deg, rgba(30,70,120,0), rgba(30,70,120,0.85))" }}
+          />
         </div>
       </div>
 
