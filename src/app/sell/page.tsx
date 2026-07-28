@@ -179,12 +179,12 @@ export default function SellPage() {
 
         <div>
           <label className="text-sm font-bold text-navy mb-2 block">지역 *</label>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {mockRegions.map((r) => (
               <button
                 key={r}
                 onClick={() => setRegion(r)}
-                className={`text-sm px-4 py-2.5 rounded-full border-2 font-bold ${
+                className={`text-sm py-2.5 rounded-full border-2 font-bold text-center ${
                   region === r ? "bg-navy text-white border-navy" : "border-gray200 text-gray500"
                 }`}
               >

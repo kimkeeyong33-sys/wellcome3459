@@ -291,21 +291,23 @@ function DealsPageInner() {
               )}
 
               <div className="flex-1 min-w-0">
-                <div className="absolute top-3 right-3.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div
+                    className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full min-w-0"
+                    style={{ background: isClosed ? "#F1F1EF" : color.bg, color: isClosed ? "#6B7480" : color.text }}
+                  >
+                    <span className="text-sm flex-shrink-0">{categoryIcons[d.category] ?? "🗂️"}</span>
+                    <span className="truncate">{d.category}</span>
+                  </div>
                   {isClosed ? (
-                    <span className="text-xs font-bold text-white bg-gray500 px-2.5 py-1.5 rounded-full">
+                    <span className="text-xs font-bold text-white bg-gray500 px-2.5 py-1.5 rounded-full flex-shrink-0">
                       마감됨
                     </span>
                   ) : (
-                    <CountdownBadge closesAt={d.closes_at} />
+                    <div className="flex-shrink-0">
+                      <CountdownBadge closesAt={d.closes_at} />
+                    </div>
                   )}
-                </div>
-                <div
-                  className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full"
-                  style={{ background: isClosed ? "#F1F1EF" : color.bg, color: isClosed ? "#6B7480" : color.text }}
-                >
-                  <span className="text-sm">{categoryIcons[d.category] ?? "🗂️"}</span>
-                  {d.category}
                 </div>
                 <div className="text-base font-bold text-gray900 mt-2">{d.title}</div>
                 <div className="text-sm text-gray500 mt-1">
