@@ -92,7 +92,7 @@ export default function LogisticsPage() {
         </p>
       </div>
 
-      <div className="px-5 pt-5">
+      <div className="px-5 pt-5 relative">
         <div className="flex gap-2 overflow-x-auto pb-1">
           {TABS.map((t) => (
             <button
@@ -109,6 +109,10 @@ export default function LogisticsPage() {
             </button>
           ))}
         </div>
+        <div
+          className="pointer-events-none absolute right-0 top-5 bottom-1 w-10"
+          style={{ background: "linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.95))" }}
+        />
       </div>
 
       <div className="flex-1 px-5 py-5">

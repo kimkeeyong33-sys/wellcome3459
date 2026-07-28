@@ -154,16 +154,16 @@ function DealDetailPageInner() {
           style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 35%, rgba(0,0,0,0.6) 100%)" }}
         />
 
-        <div className="relative z-10 flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <Link href="/" className="bg-white rounded-lg px-3.5 py-2.5 inline-block">
+        <div className="relative z-10 flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Link href="/" className="bg-white rounded-lg px-3.5 py-2.5 inline-block flex-shrink-0">
               <img src="/images/logo.png" alt="덤핑점핑" className="h-8 w-auto" />
             </Link>
-            <span className="text-white/50 text-[11px] tracking-wide">Powered by JumpingBid</span>
+            <span className="text-white/50 text-[11px] tracking-wide truncate">Powered by JumpingBid</span>
           </div>
           {remainPct <= 30 && (
             <div
-              className="text-xs font-bold px-3 py-1.5 rounded-full"
+              className="text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap flex-shrink-0"
               style={{ background: "#F2891F", color: "#fff" }}
             >
               🔥 소진임박 · {deal.remaining_qty}개 남음
