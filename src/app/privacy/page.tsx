@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "개인정보 처리방침",
+  description: "덤핑점핑 알림 서비스의 개인정보 수집·이용, 쿠키 사용, 이용약관을 안내합니다.",
+};
+
 export default function PrivacyPage() {
   return (
     <main className="min-h-screen px-5 py-8">
@@ -61,7 +68,30 @@ export default function PrivacyPage() {
         </div>
 
         <div>
-          <h2 className="font-bold text-navy mb-1.5">7. 문의처</h2>
+          <h2 className="font-bold text-navy mb-1.5">7. 쿠키(Cookie) 및 광고</h2>
+          <p>
+            서비스는 접속 환경 유지, 서비스 이용 통계 분석을 위해 쿠키 및 이와 유사한 기술을
+            사용할 수 있습니다. 이용자는 브라우저 설정에서 쿠키 저장을 거부할 수 있으며, 이 경우
+            일부 기능 이용에 제한이 있을 수 있습니다.
+          </p>
+          <p className="mt-1.5">
+            서비스는 Google을 포함한 제3자 광고 서비스를 이용할 수 있습니다. 이러한 제3자
+            공급업체는 쿠키를 사용해 이용자의 과거 서비스 방문 기록을 바탕으로 광고를 게재할 수
+            있습니다. 이용자는{" "}
+            <a
+              href="https://adssettings.google.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-orange font-bold underline"
+            >
+              Google 광고 설정
+            </a>
+            에서 맞춤 광고를 비활성화할 수 있습니다.
+          </p>
+        </div>
+
+        <div>
+          <h2 className="font-bold text-navy mb-1.5">8. 문의처</h2>
           <p>점핑익스체인지 주식회사 (덤핑점핑)</p>
           <p>개인정보 관련 문의: 서비스 내 점핑매니저 채널을 통해 접수해 주세요.</p>
         </div>

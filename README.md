@@ -72,7 +72,17 @@ cp .env.local.example .env.local
 ⚠️ 지금은 팀 전체가 공유하는 단일 비밀번호 수준의 간단한 잠금이에요. 정식 운영 단계에서는
 계정별 로그인으로 교체하는 걸 권장해요.
 
-### 7. Vercel로 배포
+### 7. SEO / 검색엔진 등록용 사이트 주소 설정
+
+`.env.local`의 `NEXT_PUBLIC_SITE_URL`에 실제 배포 주소를 넣어주세요 (커스텀 도메인 연결 전이면
+Vercel 기본 주소, 연결 후면 `https://www.dumpingjumping.com` 등으로). 이 값이 `/robots.txt`,
+`/sitemap.xml`, Open Graph 링크에 그대로 쓰입니다. Vercel에도 같은 값을 환경변수로 등록해야
+실제 배포본에 반영돼요.
+
+등록 후 [Google Search Console](https://search.google.com/search-console)에 사이트를 추가하고
+`https://주소/sitemap.xml`을 제출하면 색인 작업이 빨라집니다.
+
+### 8. Vercel로 배포
 
 1. 이 코드를 GitHub 저장소에 push
 2. https://vercel.com 에서 **New Project** → 방금 만든 저장소 선택
