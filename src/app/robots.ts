@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://dumpingjumping.vercel.app";
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://cashticket.vercel.app";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin", "/mypage"],
+        disallow: ["/owner", "/my", "/t"],
       },
     ],
     sitemap: `${BASE_URL}/sitemap.xml`,

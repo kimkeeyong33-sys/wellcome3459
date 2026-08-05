@@ -51,7 +51,7 @@ export default function InstallAppButton() {
         <span className="flex-1 min-w-0">
           <span className="block text-sm font-bold text-navy">홈 화면에 추가하기</span>
           <span className="block text-xs text-gray500 mt-0.5">
-            앱처럼 바로 열고, 마감 알림도 놓치지 마세요
+            앱처럼 바로 열어서 내 티켓을 빠르게 확인하세요
           </span>
         </span>
         <span className="text-gray500 flex-shrink-0">›</span>

@@ -1,7 +1,11 @@
-# 덤핑점핑 (JumpingBid 알림 MVP)
+# 캐시티켓 (CashTicket)
 
-회원가입 → 알림 리스트 → 매물 상세, 판매자 신청 → 관리자 승인까지 이어지는
-B2B 덤핑정보 알림 웹앱입니다. Next.js(App Router) + Supabase + Tailwind CSS로 만들었습니다.
+카카오톡을 쓸 줄 아는 사람이라면 누구나 쓸 수 있는 소상공인용 금액권(선불 티켓) 앱입니다.
+사장님이 금액권을 발행해 링크 하나로 전달하면, 고객은 로그인 없이 그 링크만으로 티켓을
+저장하고 · 매장에서 사용하고 · 남은 잔액을 다른 사람에게 선물할 수 있습니다.
+30~60대도 헤매지 않도록 글자를 크게, 단계를 최소화해서 만들었습니다.
+
+Next.js(App Router) + Supabase + Tailwind CSS로 만들었습니다.
 
 ## 지금 바로 로컬에서 확인하기 (Supabase 없이도 동작)
 
@@ -10,155 +14,117 @@ npm install
 npm run dev
 ```
 
-`http://localhost:3000` 접속. `.env.local`이 없으면 자동으로 목업 데이터(`src/lib/mockData.ts`)로
-동작하니, 화면 흐름만 먼저 확인하고 싶을 땐 이대로 써도 됩니다.
+`http://localhost:3000` 접속. `.env.local`이 없으면 서버가 메모리에 임시로 데이터를 저장하는
+데모 모드로 동작하니, 발행 → 전달 → 스캔결제 → 선물하기까지 전체 흐름을 그대로 눌러볼 수
+있어요 (단, 서버를 재시작하면 초기화됩니다).
 
-## 실제 서비스로 배포하기 — 순서대로 따라하세요
+## 실제 서비스로 배포하기
 
 ### 1. Supabase 프로젝트 만들기
 
 1. https://supabase.com 에서 새 프로젝트 생성
-2. 왼쪽 메뉴 **SQL Editor** → `supabase/schema.sql` 내용 전체 복사해서 실행
-   (members, deals, categories, regions, interests, seller_requests 등 테이블과 보안 정책이 한 번에 생성됩니다)
-3. **Authentication → Providers → Phone** 활성화
-   - SMS 발송 업체 연동 필요 (Twilio 또는 Vonage를 Supabase가 지원)
-4. **Project Settings → API**에서 아래 3개 값 복사:
+2. 왼쪽 메뉴 **SQL Editor** → `supabase/cashticket_schema.sql` 내용 전체 복사해서 실행
+   (매장·티켓·거래내역 테이블이 한 번에 생성됩니다)
+3. **Project Settings → API**에서 아래 3개 값 복사:
    - Project URL → `NEXT_PUBLIC_SUPABASE_URL`
    - anon public key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - service_role key → `SUPABASE_SERVICE_ROLE_KEY` (절대 외부 노출 금지, 서버에서만 사용)
 
 ### 2. 환경변수 설정
 
-`.env.local.example`을 복사해서 `.env.local` 생성 후 위에서 받은 값 채우기:
-
 ```bash
 cp .env.local.example .env.local
 ```
 
-### 3. 웹 푸시 알림 준비 (카카오 알림톡 대신 — 알라미처럼 기기에 직접 알림)
+위에서 받은 값을 채워 넣으세요.
 
-카카오 채널 심사나 템플릿 승인 없이, 브라우저/PWA에 바로 알림을 띄우는 방식입니다.
+### 3. SEO / 사이트맵용 실제 배포 주소 설정
 
-1. 터미널에서 키 쌍 생성:
-   ```bash
-   npx web-push generate-vapid-keys
-   ```
-2. 출력된 Public Key → `.env.local`의 `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
-3. 출력된 Private Key → `.env.local`의 `VAPID_PRIVATE_KEY` (절대 외부 노출 금지)
-4. 끝입니다 — 별도 외부 서비스 가입이나 심사가 필요 없어요.
+`.env.local`의 `NEXT_PUBLIC_SITE_URL`에 실제 배포 주소를 넣어주세요. 이 값이 QR·링크에
+그대로 사용되므로 배포 전 반드시 실제 도메인으로 채워야 합니다.
 
-> 주의: 웹 푸시는 **HTTPS 환경**에서만 동작합니다 (localhost는 예외). Vercel에 배포하면 자동으로 HTTPS가 적용되니 실제 테스트는 배포 후 진행하세요.
-> 아이폰은 Safari에서 "홈 화면에 추가"(PWA 설치) 해야만 알림을 받을 수 있어요. 회원가입 화면에서 아이폰으로 접속하면 자동으로 안내 문구가 뜹니다.
-
-### 4. 정부지원금 정보 탭 준비 (선택 — 안 하면 데모 데이터로 동작)
-
-매물이 없어도 열어볼 이유를 만들기 위한 기능입니다. 기업마당(중소벤처기업부) 공식 오픈 API를 씁니다.
-
-1. https://www.bizinfo.go.kr 접속 → 정책정보 > 정책정보 개방 > **지원사업정보 API** > "사용신청" 클릭
-2. 승인 후 발급되는 인증키(`crtfcKey`)를 `.env.local`의 `BIZINFO_API_KEY`에 입력
-3. 키를 넣지 않으면 `/support` 화면은 자동으로 데모 데이터(`src/lib/support.ts`)로 동작합니다 — 화면 확인만 할 땐 이 단계 건너뛰어도 됩니다
-
-### 5. 매물 사진 (Supabase Storage)
-
-판매자 신청·관리자 등록 화면에서 최대 4장까지 사진(실물·박스·라벨 등)을 첨부할 수 있어요.
-
-1. Supabase 대시보드 → **Storage** → "New bucket" → 이름 `deal-images`, **Public bucket** 체크
-2. 업로드는 `/api/upload`가 서버(service_role 키)를 통해 대신 처리하므로 별도 Storage 정책 설정은 필요 없어요
-3. 사진 없이 등록된 매물은 카테고리 아이콘으로 자동 대체돼요 (리스트 썸네일 · 상세 히어로 모두)
-
-### 6. 관리자 비밀번호 설정
-
-`.env.local`의 `ADMIN_PASSWORD`에 원하는 비밀번호를 정해서 넣으면 `/admin` 접근이 잠깁니다.
-⚠️ 지금은 팀 전체가 공유하는 단일 비밀번호 수준의 간단한 잠금이에요. 정식 운영 단계에서는
-계정별 로그인으로 교체하는 걸 권장해요.
-
-### 7. SEO / 검색엔진 등록용 사이트 주소 설정
-
-`.env.local`의 `NEXT_PUBLIC_SITE_URL`에 실제 배포 주소를 넣어주세요 (커스텀 도메인 연결 전이면
-Vercel 기본 주소, 연결 후면 `https://www.dumpingjumping.com` 등으로). 이 값이 `/robots.txt`,
-`/sitemap.xml`, Open Graph 링크에 그대로 쓰입니다. Vercel에도 같은 값을 환경변수로 등록해야
-실제 배포본에 반영돼요.
-
-등록 후 [Google Search Console](https://search.google.com/search-console)에 사이트를 추가하고
-`https://주소/sitemap.xml`을 제출하면 색인 작업이 빨라집니다.
-
-### 8. Vercel로 배포
+### 4. Vercel로 배포
 
 1. 이 코드를 GitHub 저장소에 push
 2. https://vercel.com 에서 **New Project** → 방금 만든 저장소 선택
 3. **Environment Variables**에 `.env.local`과 동일한 값들을 그대로 입력
 4. Deploy 클릭 → 몇 분 후 `https://프로젝트명.vercel.app` 주소로 접속 가능
-5. 커스텀 도메인 연결하려면 Vercel 프로젝트 **Settings → Domains**에서 원하는 도메인을 등록
 
-## 매물 등록 흐름 (판매자 신청 → 관리자 승인 → 자동 알림)
+## 전체 흐름
 
-1. **판매자**: `/sell` 페이지에서 누구나 로그인 없이 매물 등록을 신청할 수 있어요 (사진 첨부 가능). 제출하면 `seller_requests` 테이블에 `pending` 상태로 저장됩니다.
-2. **관리자**: `/admin` 페이지 비밀번호로 들어가면 대기 중인 신청을 확인하고, "매물로 등록하기"를 눌러 마감시간·최종 가격을 정해서 실제 `deals`로 확정할 수 있어요. 신청 없이 전화로 들어온 물량은 "새 매물 직접 등록"으로 바로 넣으면 됩니다.
-3. 매물이 확정되는 즉시 해당 카테고리·지역 구독자에게 **자동으로 웹 푸시가 발송**돼요 (`/api/push/send`는 재발송이 필요할 때만 수동 호출하면 됩니다).
-4. 진행 중인 매물은 `/admin`에서 재고 수정·마감 연장·조기 마감이 가능하고, 마감이 지난 매물은 `/deals` 리스트에서 자동으로 사라져요.
-5. 회원이 매물 상세에서 "관심있어요"를 누르면 `/admin` 대시보드 최상단에 **리드로 즉시 표시**돼요. 전화번호와 사업자 여부가 함께 보이고, 연락하고 나면 "연락완료"로 체크해서 관리할 수 있어요.
-   - 아직 회원가입을 안 한 사람이 매물 상세에서 "관심있어요"를 누르면 회원가입 화면으로 이동하고, 가입을 마치면 자동으로 원래 매물로 돌아와 관심 표시가 이어집니다.
+### 사장님
 
-## 비공개 베타 체크리스트
+1. **매장 등록** (`/owner/signup`) — 매장 이름·사장님 성함·휴대폰 번호·4자리 비밀번호만 입력하면 끝. 사업자등록증 없이 바로 시작.
+2. **티켓 발행** (`/owner/tickets/new`) — 금액(빠른 선택 버튼 제공)과 유효기간(1개월~1년)을 정해 발행.
+3. **고객에게 전달** (`/owner/tickets/[code]`) — QR코드와 6자리 코드가 함께 표시되고, "카카오톡 등으로 전달하기" 버튼을 누르면 기기의 공유 시트(카카오톡 포함)로 바로 보낼 수 있어요. 별도 카카오 API 키나 심사 없이 동작합니다 (Web Share API 사용, 미지원 브라우저는 링크 복사로 대체).
+4. **QR 스캔 · 결제 확인** (`/owner/scan`) — 카메라로 고객 화면의 QR을 스캔하거나, 6자리 코드를 직접 입력해 조회 → 결제 금액 입력 → 확정하면 잔액이 즉시 차감돼요.
+5. **정산 대시보드** (`/owner/dashboard`) — 발행액·사용액·미사용잔액과 최근 거래내역을 한눈에 확인.
 
-- 커뮤니티 일부에게 먼저 링크 공유
-- `notification_logs`, `interests` 테이블로 반응률·전환율 확인
-- 회원가입 화면의 "개인정보 처리방침" 링크(`/privacy`)와 알림 해지(`/unsubscribe`) 흐름 사전 확인
+### 고객
+
+1. **티켓 받기** (`/t/[코드]`) — 카카오톡 등으로 받은 링크를 열면 자동으로 "내 모아보기"에 저장돼요. 로그인 필요 없음(이 기기에 보관).
+2. **모아보기** (`/my`) — 저장된 모든 티켓의 잔액과 소멸 임박 여부(14일 이내 주황색 경고)를 한 번에 확인.
+3. **매장 방문** — 같은 `/t/[코드]` 화면에 있는 QR을 매장 직원에게 보여주면 끝.
+4. **잔액 사용** — 매장에서 스캔·확정하면 일부 금액만 차감되고 나머지는 계속 남아있어요(분할 사용 가능).
+5. **선물하기** (`/t/[코드]/gift`) — 남은 잔액 중 원하는 만큼 새 티켓으로 나눠 다른 사람에게 링크로 보낼 수 있어요. 받은 사람도 똑같이 모아보기에서 확인할 수 있습니다.
+
+## 규제 관련 설계 메모 (사업계획서 3-1장 반영)
+
+MVP는 **단일 매장 전용 티켓만** 발행합니다(매장 간 잔액 교차사용 없음). 전자금융거래법상
+선불전자지급수단 등록 면제 요건 ①(단일 가맹점 전용)을 그대로 충족하도록, `/api/owner/tickets/redeem`이
+결제를 발행한 매장(`store_id`)과 항상 대조해 다른 매장에서는 사용할 수 없도록 막고 있어요.
+멀티 매장 확장은 발행잔액 30억원 · 연 발행액 500억원 임계치 관리(면제 사유 ②)가 필요한
+2단계 이후 항목입니다.
 
 ## 기술 스택
 
 - Next.js 16 (App Router, TypeScript, Tailwind CSS v4)
-- Supabase (Postgres + Auth + Storage + Realtime)
-- 웹 푸시 (`web-push`, VAPID 키 기반)
+- Supabase (Postgres) — API 라우트가 service role 키로만 접근 (RLS로 anon 직접 접근 차단)
+- `qrcode` (QR 생성, 오프라인) / `jsqr` (카메라 QR 스캔)
 
 ## 디렉터리 구조
 
 ```
 src/
   app/
-    page.tsx                       홈
-    signup/page.tsx                 ① 회원가입 (카테고리/지역 선택 + 기기 알림 권한 요청)
-    deals/page.tsx                   ② 알림 리스트 (카운트다운 실시간 갱신, 대표사진)
-    deals/[id]/page.tsx              ③ 매물 상세 (사진 갤러리, 점핑매니저 배너)
-    sell/page.tsx                    판매자 매물 등록 신청 (공개, 사진 첨부)
-    admin/page.tsx                   관리자 대시보드 (비밀번호 보호, 신청 승인 + 매물 등록/관리)
-    support/page.tsx                 정부지원금 정보
-    privacy/page.tsx                 개인정보 처리방침 · 이용약관
-    unsubscribe/page.tsx             알림 해지 · 탈퇴
-    buy/ logistics/ mypage/ tools/   구매/물류/마이페이지/도구 관련 화면
+    page.tsx                          홈 (사장님 / 고객 진입점)
+    owner/
+      signup/page.tsx                 ① 매장 등록
+      login/page.tsx                  사장님 로그인
+      dashboard/page.tsx              정산 대시보드 + 최근 내역
+      tickets/new/page.tsx            ② 티켓 발행
+      tickets/[code]/page.tsx         ③ 고객에게 전달 (QR + 카카오톡 공유)
+      scan/page.tsx                   ④ QR 스캔 · 결제 확인
+    t/[code]/page.tsx                 고객: ① 티켓 받기 · ③ 매장 방문(QR 제시) · ④ 사용내역
+    t/[code]/gift/page.tsx            고객: ⑤ 선물하기
+    my/page.tsx                       고객: ② 모아보기
     api/
-      push/subscribe/route.ts      푸시 구독 정보 저장
-      push/send/route.ts           수동 알림 발송 (재발송용)
-      upload/route.ts              매물 사진 업로드 (Supabase Storage)
-      admin/deals/route.ts         관리자 매물 등록 (등록 즉시 자동 알림 발송)
-      admin/deals/manage/route.ts  진행 중인 매물 조회/수정/조기마감
-      admin/interests/route.ts     관심표시(리드) 조회 · 연락완료 처리
-      admin/seller-requests/route.ts  판매자 신청 조회/승인/거절
-      seller-requests/route.ts     판매자 신청 접수
-      unsubscribe/route.ts         알림 해지 처리
+      owner/signup/route.ts           매장 등록
+      owner/login/route.ts            사장님 로그인
+      owner/dashboard/route.ts        정산 요약 + 최근 거래
+      owner/tickets/route.ts          티켓 발행
+      owner/tickets/redeem/route.ts   QR 스캔 후 결제 확정 (잔액 차감)
+      tickets/[code]/route.ts         티켓 조회 (공개)
+      tickets/[code]/gift/route.ts    선물하기 (잔액 분할)
   components/
-    CountdownBadge.tsx              실시간 카운트다운 배지
-    ImageUploader.tsx                사진 첨부 공용 컴포넌트 (최대 4장)
-    VideoUploader.tsx                영상 첨부 컴포넌트
-    SplashScreen.tsx                 스플래시 화면
+    cashticket/TicketQR.tsx           QR 표시 (qrcode 라이브러리, 오프라인 생성)
+    cashticket/QRScanner.tsx          카메라 QR 스캔 (jsQR)
+    InstallAppButton.tsx              홈 화면에 추가하기 버튼
   lib/
-    supabase.ts                     Supabase 클라이언트 (env 없으면 null → 목업 데이터로 대체)
-    mockData.ts                     로컬 데모용 목업 데이터 (카테고리 9종 · 전국 17개 지역)
-    format.ts                       카운트다운/가격 포맷 유틸
-    pushClient.ts                   브라우저 알림 권한 요청 + 푸시 구독
-    sendPush.ts                      웹 푸시 발송 공용 로직
-    support.ts                      정부지원금 데모 데이터
+    cashticket/code.ts                6자리 티켓 코드 생성
+    cashticket/wallet.ts              고객 모아보기 · 사장님 로그인 세션 (localStorage)
+    cashticket/adminClient.ts         Supabase service role 클라이언트
+    cashticket/demoStore.ts           Supabase 미설정 시 메모리 데모 저장소
+    format.ts                         금액 포맷 유틸
 public/
-  sw.js                           서비스워커 (백그라운드 알림 수신)
-  manifest.json                    PWA 매니페스트 (홈 화면 추가용)
-  images/manager.png               점핑매니저 인물 이미지
+  manifest.json                       PWA 매니페스트 (홈 화면 추가용)
 supabase/
-  schema.sql                      DB 스키마 (그대로 실행하면 됨)
+  cashticket_schema.sql               DB 스키마 (그대로 실행하면 됨)
 ```
 
 ## 향후 확장 아이디어
 
-- 하향/상향/역경매/공동구매 등 다양한 거래 방식으로 확장 (Supabase Realtime으로 실시간 가격 갱신, Postgres RPC/트랜잭션으로 동시 입찰 정합성 보장)
-- 알림 클릭률·전환율 통계 대시보드 (`notification_logs`, `interests` 집계)
-- 실제 SMS 인증 연동 강화 (현재 Supabase 미설정 시 인증 단계 스킵)
-- 이미지 갤러리 라이트박스(확대보기)
+- 사장님 인증을 문자 인증(OTP) 기반으로 강화 (현재는 전화번호+4자리 비밀번호)
+- 멀티 매장·프랜차이즈 지원 (선불전자지급수단 등록/위탁 구조 확정 후)
+- AI 기반 휴면 고객 재방문 유도, 인기 상품 예측 (사업계획서 6장)
+- 스탬프 적립·단골 등급 등 마케팅 기능
