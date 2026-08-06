@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isSupabaseReady, getAdminClient } from "@/lib/cashticket/adminClient";
 import { demoGetPaymentRequest } from "@/lib/cashticket/demoStore";
 import { isTossConfigured } from "@/lib/cashticket/toss";
+import { getPublicStoreInfoDemo, getPublicStoreInfoSupabase } from "@/lib/cashticket/storeInfo";
 
 export async function GET(
   req: NextRequest,
@@ -14,6 +15,7 @@ export async function GET(
   if (!isSupabaseReady()) {
     const request = demoGetPaymentRequest(code);
     if (!request) return NextResponse.json({ error: "결제 요청을 찾을 수 없어요." }, { status: 404 });
+    const store = getPublicStoreInfoDemo(request.storeId);
     return NextResponse.json({
       ok: true,
       demo: true,
@@ -21,6 +23,11 @@ export async function GET(
       request: {
         code: request.code,
         storeName: request.storeName,
+        storeVerified: store.verified,
+        storeAddress: store.address,
+        storeBusinessHours: store.businessHours,
+        storePublicPhone: store.publicPhone,
+        storeProducts: store.products,
         amount: request.amount,
         memo: request.memo ?? null,
         status: request.status,
@@ -32,22 +39,19 @@ export async function GET(
   const supabaseAdmin = getAdminClient();
   const { data: request, error } = await supabaseAdmin
     .from("ct_payment_requests")
-    .select("code, store_name, amount, memo, status, ticket_id")
+    .select("code, store_id, store_name, amount, memo, status, ticket_id")
     .eq("code", code)
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!request) return NextResponse.json({ error: "결제 요청을 찾을 수 없어요." }, { status: 404 });
 
-  let ticketCode: string | null = null;
-  if (request.ticket_id) {
-    const { data: ticket } = await supabaseAdmin
-      .from("ct_tickets")
-      .select("code")
-      .eq("id", request.ticket_id)
-      .maybeSingle();
-    ticketCode = ticket?.code ?? null;
-  }
+  const [store, ticketRow] = await Promise.all([
+    getPublicStoreInfoSupabase(supabaseAdmin, request.store_id),
+    request.ticket_id
+      ? supabaseAdmin.from("ct_tickets").select("code").eq("id", request.ticket_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
 
   return NextResponse.json({
     ok: true,
@@ -55,10 +59,15 @@ export async function GET(
     request: {
       code: request.code,
       storeName: request.store_name,
+      storeVerified: store.verified,
+      storeAddress: store.address,
+      storeBusinessHours: store.businessHours,
+      storePublicPhone: store.publicPhone,
+      storeProducts: store.products,
       amount: Number(request.amount),
       memo: request.memo,
       status: request.status,
-      ticketCode,
+      ticketCode: ticketRow?.data?.code ?? null,
     },
   });
 }

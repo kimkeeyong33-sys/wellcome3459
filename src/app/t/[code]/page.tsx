@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import TicketQR from "@/components/cashticket/TicketQR";
+import StoreInfoCard from "@/components/cashticket/StoreInfoCard";
 import { ticketUrl } from "@/lib/cashticket/code";
 import { addToWallet, isInWallet } from "@/lib/cashticket/wallet";
 import { formatPrice } from "@/lib/format";
@@ -11,6 +12,10 @@ type Ticket = {
   code: string;
   storeName: string;
   storeVerified: boolean;
+  storeAddress: string | null;
+  storeBusinessHours: string | null;
+  storePublicPhone: string | null;
+  storeProducts: { id: string; name: string; price: number }[];
   issuedAmount: number;
   balance: number;
   status: string;
@@ -146,6 +151,13 @@ export default function TicketReceivePage({
             🎁 잔액 나눠서 선물하기
           </Link>
         )}
+
+        <StoreInfoCard
+          address={ticket.storeAddress}
+          businessHours={ticket.storeBusinessHours}
+          publicPhone={ticket.storePublicPhone}
+          products={ticket.storeProducts}
+        />
 
         {tx.length > 0 && (
           <div className="w-full mt-4">

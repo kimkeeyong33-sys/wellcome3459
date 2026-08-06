@@ -2,11 +2,17 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
+import StoreInfoCard from "@/components/cashticket/StoreInfoCard";
 import { formatPrice } from "@/lib/format";
 
 type PayRequest = {
   code: string;
   storeName: string;
+  storeVerified: boolean;
+  storeAddress: string | null;
+  storeBusinessHours: string | null;
+  storePublicPhone: string | null;
+  storeProducts: { id: string; name: string; price: number }[];
   amount: number;
   memo: string | null;
   status: "pending" | "paid" | "canceled";
@@ -121,7 +127,14 @@ export default function PayPage({ params }: { params: Promise<{ code: string }> 
         className="px-5 pt-8 pb-7 text-white text-center"
         style={{ background: "linear-gradient(135deg, #0B2540, #1B3A5C)" }}
       >
-        <div className="text-white/80 text-sm">{req.storeName}</div>
+        <div className="flex items-center justify-center gap-1.5 text-white/80 text-sm">
+          {req.storeName}
+          {req.storeVerified && (
+            <span className="inline-flex items-center gap-0.5 text-[11px] font-bold bg-white/15 rounded-full px-2 py-0.5">
+              🏅 인증 매장
+            </span>
+          )}
+        </div>
         <h1 className="font-display text-4xl mt-2">{formatPrice(req.amount)}</h1>
         {req.memo && <div className="text-white/80 text-sm mt-3">&ldquo;{req.memo}&rdquo;</div>}
       </div>
@@ -131,6 +144,13 @@ export default function PayPage({ params }: { params: Promise<{ code: string }> 
           결제하신 금액은 <b className="text-gray900">{req.storeName}</b>에서만 사용할 수 있는 선불
           금액권으로 즉시 발급돼요. 매장 사정으로 이용이 어려워질 경우 환불 규정에 따라 처리돼요.
         </div>
+
+        <StoreInfoCard
+          address={req.storeAddress}
+          businessHours={req.storeBusinessHours}
+          publicPhone={req.storePublicPhone}
+          products={req.storeProducts}
+        />
 
         <label className="flex items-start gap-2.5 cursor-pointer">
           <input

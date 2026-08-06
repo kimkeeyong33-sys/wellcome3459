@@ -19,6 +19,9 @@ create table if not exists public.ct_stores (
   business_open_date text, -- 개업일자 (YYYYMMDD) — 국세청 진위확인 조회용
   business_rep_name text, -- 대표자 성명 — 국세청 진위확인 조회용
   business_verified boolean not null default false, -- 국세청 진위확인 API 통과 여부
+  address text, -- 매장 주소 (선택 입력 — 고객 화면에 노출)
+  business_hours text, -- 영업시간 (자유 형식 텍스트, 예: "매일 09:00~21:00")
+  public_phone text, -- 고객에게 공개할 매장 전화번호 (로그인용 phone과 별개)
   created_at timestamptz default now()
 );
 
@@ -43,6 +46,9 @@ alter table public.ct_stores add column if not exists business_number text;
 alter table public.ct_stores add column if not exists business_open_date text;
 alter table public.ct_stores add column if not exists business_rep_name text;
 alter table public.ct_stores add column if not exists business_verified boolean not null default false;
+alter table public.ct_stores add column if not exists address text;
+alter table public.ct_stores add column if not exists business_hours text;
+alter table public.ct_stores add column if not exists public_phone text;
 
 create index if not exists ct_tickets_store_id_idx on public.ct_tickets(store_id);
 create index if not exists ct_tickets_code_idx on public.ct_tickets(code);
@@ -80,10 +86,23 @@ create table if not exists public.ct_payment_requests (
 create index if not exists ct_payment_requests_code_idx on public.ct_payment_requests(code);
 create index if not exists ct_payment_requests_store_id_idx on public.ct_payment_requests(store_id);
 
+-- 5. 상품/서비스 가격표 (매장이 파는 것과 가격 — 결제 전 고객이 참고하도록 노출)
+create table if not exists public.ct_products (
+  id uuid primary key default gen_random_uuid(),
+  store_id uuid not null references public.ct_stores(id) on delete cascade,
+  name text not null,
+  price numeric not null,
+  sort_order int not null default 0,
+  created_at timestamptz default now()
+);
+
+create index if not exists ct_products_store_id_idx on public.ct_products(store_id);
+
 -- RLS: 모든 읽기/쓰기는 서버 API(route.ts, service role 키)를 통해서만 이루어지므로
 -- anon 키로는 직접 접근하지 못하도록 막습니다.
 alter table public.ct_stores enable row level security;
 alter table public.ct_tickets enable row level security;
 alter table public.ct_transactions enable row level security;
 alter table public.ct_payment_requests enable row level security;
+alter table public.ct_products enable row level security;
 -- (정책을 추가하지 않으면 anon 키 요청은 기본적으로 모두 거부됩니다.)

@@ -13,6 +13,18 @@ export type DemoStoreRow = {
   category?: string;
   businessNumber?: string;
   businessVerified: boolean;
+  address?: string;
+  businessHours?: string;
+  publicPhone?: string;
+};
+
+export type DemoProductRow = {
+  id: string;
+  storeId: string;
+  name: string;
+  price: number;
+  sortOrder: number;
+  createdAt: string;
 };
 
 export type DemoTicketRow = {
@@ -56,6 +68,7 @@ type DemoDB = {
   tickets: Map<string, DemoTicketRow>; // key: code
   transactions: DemoTxRow[];
   paymentRequests: Map<string, DemoPaymentRequestRow>; // key: code
+  products: Map<string, DemoProductRow>; // key: id
 };
 
 const g = globalThis as unknown as { __ctDemoDB?: DemoDB };
@@ -67,6 +80,7 @@ function db(): DemoDB {
       tickets: new Map(),
       transactions: [],
       paymentRequests: new Map(),
+      products: new Map(),
     };
   }
   return g.__ctDemoDB;
@@ -91,6 +105,16 @@ export function demoCreateStore(
 export function demoSetBusinessVerified(storeId: string, verified: boolean) {
   const store = db().stores.get(storeId);
   if (store) store.businessVerified = verified;
+}
+
+export function demoUpdateStoreInfo(
+  storeId: string,
+  input: { address?: string; businessHours?: string; publicPhone?: string }
+): DemoStoreRow | undefined {
+  const store = db().stores.get(storeId);
+  if (!store) return undefined;
+  Object.assign(store, input);
+  return store;
 }
 
 export function demoFindStoreByPhone(phone: string): DemoStoreRow | undefined {
@@ -275,4 +299,31 @@ export function demoDashboard(storeId: string) {
     }));
 
   return { issuedTotal, usedTotal, unusedBalance, ticketCount: storeTickets.length, recent };
+}
+
+export function demoListProducts(storeId: string): DemoProductRow[] {
+  return [...db().products.values()]
+    .filter((p) => p.storeId === storeId)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+export function demoCreateProduct(input: { storeId: string; name: string; price: number }): DemoProductRow {
+  const { products } = db();
+  const sortOrder = demoListProducts(input.storeId).length;
+  const row: DemoProductRow = {
+    id: nextId("product"),
+    storeId: input.storeId,
+    name: input.name,
+    price: input.price,
+    sortOrder,
+    createdAt: new Date().toISOString(),
+  };
+  products.set(row.id, row);
+  return row;
+}
+
+export function demoDeleteProduct(storeId: string, productId: string) {
+  const { products } = db();
+  const product = products.get(productId);
+  if (product && product.storeId === storeId) products.delete(productId);
 }
