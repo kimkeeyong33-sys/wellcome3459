@@ -23,14 +23,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       demo: true,
-      store: { id: store.id, storeName: store.storeName, ownerName: store.ownerName },
+      store: {
+        id: store.id,
+        storeName: store.storeName,
+        ownerName: store.ownerName,
+        businessVerified: store.businessVerified,
+      },
     });
   }
 
   const supabaseAdmin = getAdminClient();
   const { data: store, error } = await supabaseAdmin
     .from("ct_stores")
-    .select("id, store_name, owner_name, pin")
+    .select("id, store_name, owner_name, pin, business_verified")
     .eq("phone", phone)
     .maybeSingle();
 
@@ -41,6 +46,11 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    store: { id: store.id, storeName: store.store_name, ownerName: store.owner_name },
+    store: {
+      id: store.id,
+      storeName: store.store_name,
+      ownerName: store.owner_name,
+      businessVerified: store.business_verified,
+    },
   });
 }

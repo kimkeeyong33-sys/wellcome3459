@@ -17,6 +17,7 @@ const VALID_OPTIONS = [
 export default function NewTicketPage() {
   const router = useRouter();
   const [session, setSession] = useState<OwnerSession | null>(null);
+  const [mode, setMode] = useState<"free" | "paid">("free");
   const [amountInput, setAmountInput] = useState("");
   const [validDays, setValidDays] = useState(90);
   const [memo, setMemo] = useState("");
@@ -43,7 +44,8 @@ export default function NewTicketPage() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch("/api/owner/tickets", {
+      const endpoint = mode === "paid" ? "/api/owner/payment-requests" : "/api/owner/tickets";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-store-id": session.storeId },
         body: JSON.stringify({ amount, validDays, memo }),
@@ -53,7 +55,7 @@ export default function NewTicketPage() {
         setError(data.error || "발행 중 오류가 발생했어요.");
         return;
       }
-      router.push(`/owner/tickets/${data.code}`);
+      router.push(mode === "paid" ? `/owner/payment-requests/${data.code}` : `/owner/tickets/${data.code}`);
     } catch {
       setError("발행 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
     } finally {
@@ -78,7 +80,43 @@ export default function NewTicketPage() {
 
       <div className="flex-1 px-5 py-6 flex flex-col gap-6" style={{ paddingBottom: "108px" }}>
         <div>
-          <label className="text-base font-bold text-navy mb-2 block">발행 금액</label>
+          <label className="text-base font-bold text-navy mb-2 block">발행 방식</label>
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              onClick={() => setMode("free")}
+              className={`rounded-xl border-2 px-3 py-3.5 text-left ${
+                mode === "free" ? "bg-navy text-white border-navy" : "border-gray200"
+              }`}
+            >
+              <div className="text-sm font-bold">🎁 무료 증정</div>
+              <div className={`text-xs mt-1 ${mode === "free" ? "text-white/70" : "text-gray500"}`}>
+                지금처럼 바로 발행
+              </div>
+            </button>
+            <button
+              onClick={() => setMode("paid")}
+              className={`rounded-xl border-2 px-3 py-3.5 text-left ${
+                mode === "paid" ? "bg-navy text-white border-navy" : "border-gray200"
+              }`}
+            >
+              <div className="text-sm font-bold">💳 고객 결제 받기</div>
+              <div className={`text-xs mt-1 ${mode === "paid" ? "text-white/70" : "text-gray500"}`}>
+                결제 완료 후 발급
+              </div>
+            </button>
+          </div>
+          {mode === "paid" && (
+            <div className="text-xs text-gray500 leading-relaxed bg-gray100 rounded-xl px-4 py-3 mt-2.5">
+              고객에게 결제 링크를 보내면, 고객이 직접 결제를 마친 뒤 자동으로 티켓이 발급돼요.
+              선결제로 매장 운영자금을 바로 확보할 수 있어요.
+            </div>
+          )}
+        </div>
+
+        <div>
+          <label className="text-base font-bold text-navy mb-2 block">
+            {mode === "paid" ? "받을 금액" : "발행 금액"}
+          </label>
           <div className="relative">
             <input
               className="w-full border-2 border-gray200 rounded-xl px-4 pr-12 text-2xl font-black text-right outline-none focus:border-orange"
@@ -151,7 +189,13 @@ export default function NewTicketPage() {
           className="w-full text-white text-center font-bold rounded-2xl text-lg disabled:opacity-60"
           style={{ background: "linear-gradient(135deg, #D9531E, #F2891F)", padding: "18px 0" }}
         >
-          {submitting ? "발행 중..." : amount ? `${amount.toLocaleString()}원 발행하기` : "금액을 입력해주세요"}
+          {submitting
+            ? "처리 중..."
+            : amount
+            ? mode === "paid"
+              ? `${amount.toLocaleString()}원 결제 링크 만들기`
+              : `${amount.toLocaleString()}원 발행하기`
+            : "금액을 입력해주세요"}
         </button>
       </div>
     </main>

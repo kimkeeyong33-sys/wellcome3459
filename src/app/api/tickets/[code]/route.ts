@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isSupabaseReady, getAdminClient } from "@/lib/cashticket/adminClient";
-import { demoGetTicket, demoGetTransactions } from "@/lib/cashticket/demoStore";
+import { demoGetStore, demoGetTicket, demoGetTransactions } from "@/lib/cashticket/demoStore";
 
 export async function GET(
   req: NextRequest,
@@ -13,12 +13,14 @@ export async function GET(
     const ticket = demoGetTicket(code);
     if (!ticket) return NextResponse.json({ error: "티켓을 찾을 수 없어요." }, { status: 404 });
     const tx = demoGetTransactions(ticket.id);
+    const store = demoGetStore(ticket.storeId);
     return NextResponse.json({
       ok: true,
       demo: true,
       ticket: {
         code: ticket.code,
         storeName: ticket.storeName,
+        storeVerified: store?.businessVerified ?? false,
         issuedAmount: ticket.issuedAmount,
         balance: ticket.balance,
         status: ticket.status,
@@ -32,24 +34,28 @@ export async function GET(
   const supabaseAdmin = getAdminClient();
   const { data: ticket, error } = await supabaseAdmin
     .from("ct_tickets")
-    .select("id, code, store_name, issued_amount, balance, status, expires_at, memo")
+    .select("id, code, store_id, store_name, issued_amount, balance, status, expires_at, memo")
     .eq("code", code)
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!ticket) return NextResponse.json({ error: "티켓을 찾을 수 없어요." }, { status: 404 });
 
-  const { data: tx } = await supabaseAdmin
-    .from("ct_transactions")
-    .select("type, amount, created_at")
-    .eq("ticket_id", ticket.id)
-    .order("created_at", { ascending: false });
+  const [{ data: tx }, { data: store }] = await Promise.all([
+    supabaseAdmin
+      .from("ct_transactions")
+      .select("type, amount, created_at")
+      .eq("ticket_id", ticket.id)
+      .order("created_at", { ascending: false }),
+    supabaseAdmin.from("ct_stores").select("business_verified").eq("id", ticket.store_id).maybeSingle(),
+  ]);
 
   return NextResponse.json({
     ok: true,
     ticket: {
       code: ticket.code,
       storeName: ticket.store_name,
+      storeVerified: store?.business_verified ?? false,
       issuedAmount: Number(ticket.issued_amount),
       balance: Number(ticket.balance),
       status: ticket.status,

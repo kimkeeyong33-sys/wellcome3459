@@ -15,6 +15,10 @@ export default function OwnerSignupPage() {
   const [pin, setPin] = useState("");
   const [pinCheck, setPinCheck] = useState("");
   const [category, setCategory] = useState("음식점");
+  const [showBusiness, setShowBusiness] = useState(false);
+  const [businessNumber, setBusinessNumber] = useState("");
+  const [businessOpenDate, setBusinessOpenDate] = useState("");
+  const [businessRepName, setBusinessRepName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -42,7 +46,16 @@ export default function OwnerSignupPage() {
       const res = await fetch("/api/owner/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ownerName, storeName, phone, pin, category }),
+        body: JSON.stringify({
+          ownerName,
+          storeName,
+          phone,
+          pin,
+          category,
+          businessNumber: businessNumber || undefined,
+          businessOpenDate: businessOpenDate || undefined,
+          businessRepName: businessRepName || undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -53,6 +66,7 @@ export default function OwnerSignupPage() {
         storeId: data.store.id,
         storeName: data.store.storeName,
         ownerName: data.store.ownerName,
+        businessVerified: data.store.businessVerified,
       });
       router.push("/owner/dashboard");
     } catch {
@@ -144,6 +158,52 @@ export default function OwnerSignupPage() {
             type="password"
           />
         </Field>
+
+        {!showBusiness ? (
+          <button
+            onClick={() => setShowBusiness(true)}
+            className="flex items-center justify-between rounded-xl bg-gray100 px-4 py-3.5 text-left"
+          >
+            <span className="text-sm font-bold text-navy">
+              🏅 사업자등록 인증하고 신뢰도 높이기
+              <span className="ml-1.5 text-xs font-medium text-gray500">(선택)</span>
+            </span>
+            <span className="text-gray500">›</span>
+          </button>
+        ) : (
+          <div className="rounded-xl border-2 border-gray200 p-4 flex flex-col gap-3.5">
+            <div className="text-xs text-gray500 leading-relaxed">
+              국세청에서 즉시 확인돼요. 통과하면 고객 화면에{" "}
+              <b className="text-navy">&ldquo;인증 매장&rdquo;</b> 표시가 붙어요.
+            </div>
+            <Field label="사업자등록번호">
+              <input
+                className="input"
+                placeholder="숫자 10자리"
+                value={businessNumber}
+                onChange={(e) => setBusinessNumber(e.target.value.replace(/[^\d]/g, "").slice(0, 10))}
+                inputMode="numeric"
+              />
+            </Field>
+            <Field label="개업일자">
+              <input
+                className="input"
+                placeholder="20200101"
+                value={businessOpenDate}
+                onChange={(e) => setBusinessOpenDate(e.target.value.replace(/[^\d]/g, "").slice(0, 8))}
+                inputMode="numeric"
+              />
+            </Field>
+            <Field label="대표자 성함">
+              <input
+                className="input"
+                placeholder="사업자등록증에 적힌 이름"
+                value={businessRepName}
+                onChange={(e) => setBusinessRepName(e.target.value)}
+              />
+            </Field>
+          </div>
+        )}
 
         {error && <div className="text-sm text-orange font-medium">{error}</div>}
 

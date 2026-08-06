@@ -15,6 +15,10 @@ create table if not exists public.ct_stores (
   phone text unique not null,
   pin text not null, -- 4자리 숫자 비밀번호 (MVP: 평문 저장, 서버 API 경유로만 조회/검증)
   category text,
+  business_number text, -- 사업자등록번호 (선택 입력)
+  business_open_date text, -- 개업일자 (YYYYMMDD) — 국세청 진위확인 조회용
+  business_rep_name text, -- 대표자 성명 — 국세청 진위확인 조회용
+  business_verified boolean not null default false, -- 국세청 진위확인 API 통과 여부
   created_at timestamptz default now()
 );
 
@@ -34,6 +38,12 @@ create table if not exists public.ct_tickets (
   created_at timestamptz default now()
 );
 
+-- 이미 이전 버전 스키마로 ct_stores를 만든 적이 있다면 새 컬럼만 추가합니다.
+alter table public.ct_stores add column if not exists business_number text;
+alter table public.ct_stores add column if not exists business_open_date text;
+alter table public.ct_stores add column if not exists business_rep_name text;
+alter table public.ct_stores add column if not exists business_verified boolean not null default false;
+
 create index if not exists ct_tickets_store_id_idx on public.ct_tickets(store_id);
 create index if not exists ct_tickets_code_idx on public.ct_tickets(code);
 
@@ -49,9 +59,31 @@ create table if not exists public.ct_transactions (
 
 create index if not exists ct_transactions_ticket_id_idx on public.ct_transactions(ticket_id);
 
+-- 4. 결제 요청 (고객이 실제로 돈을 내고 금액권을 받는 "선결제" 흐름)
+-- 사장님이 결제형으로 발행을 요청하면 여기에 pending으로 먼저 쌓이고,
+-- 토스페이먼츠 결제 승인이 완료된 뒤에야 ct_tickets가 생성됩니다.
+create table if not exists public.ct_payment_requests (
+  id uuid primary key default gen_random_uuid(),
+  code text unique not null,
+  store_id uuid not null references public.ct_stores(id) on delete cascade,
+  store_name text not null,
+  amount numeric not null,
+  valid_days int not null,
+  memo text,
+  status text not null default 'pending', -- pending | paid | canceled
+  order_id text, -- 토스페이먼츠에 전달한 주문번호 (승인 시 기록)
+  ticket_id uuid references public.ct_tickets(id), -- 결제 완료 후 발급된 티켓
+  created_at timestamptz default now(),
+  paid_at timestamptz
+);
+
+create index if not exists ct_payment_requests_code_idx on public.ct_payment_requests(code);
+create index if not exists ct_payment_requests_store_id_idx on public.ct_payment_requests(store_id);
+
 -- RLS: 모든 읽기/쓰기는 서버 API(route.ts, service role 키)를 통해서만 이루어지므로
 -- anon 키로는 직접 접근하지 못하도록 막습니다.
 alter table public.ct_stores enable row level security;
 alter table public.ct_tickets enable row level security;
 alter table public.ct_transactions enable row level security;
+alter table public.ct_payment_requests enable row level security;
 -- (정책을 추가하지 않으면 anon 키 요청은 기본적으로 모두 거부됩니다.)

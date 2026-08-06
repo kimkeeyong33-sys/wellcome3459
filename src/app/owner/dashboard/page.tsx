@@ -73,6 +73,18 @@ export default function OwnerDashboardPage() {
           <div>
             <div className="text-white/70 text-sm">{session.ownerName} 사장님</div>
             <h1 className="font-display text-2xl mt-1">{session.storeName}</h1>
+            {session.businessVerified ? (
+              <div className="inline-flex items-center gap-1 text-xs font-bold text-white/90 bg-white/10 rounded-full px-2.5 py-1 mt-2">
+                🏅 인증 매장
+              </div>
+            ) : (
+              <Link
+                href="/owner/settings"
+                className="inline-flex items-center gap-1 text-xs font-bold text-white/70 underline mt-2"
+              >
+                사업자등록 인증하고 신뢰도 높이기 ›
+              </Link>
+            )}
           </div>
           <button onClick={logout} className="text-white/60 text-sm underline">
             로그아웃

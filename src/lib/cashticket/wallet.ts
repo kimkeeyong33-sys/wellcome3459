@@ -34,7 +34,12 @@ export function isInWallet(code: string): boolean {
 //  실제 서비스 전환 시 정식 인증으로 교체가 필요합니다.)
 const OWNER_KEY = "cashticket_owner_session";
 
-export type OwnerSession = { storeId: string; storeName: string; ownerName: string };
+export type OwnerSession = {
+  storeId: string;
+  storeName: string;
+  ownerName: string;
+  businessVerified?: boolean;
+};
 
 export function getOwnerSession(): OwnerSession | null {
   if (typeof window === "undefined") return null;

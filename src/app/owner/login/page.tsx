@@ -38,6 +38,7 @@ export default function OwnerLoginPage() {
         storeId: data.store.id,
         storeName: data.store.storeName,
         ownerName: data.store.ownerName,
+        businessVerified: data.store.businessVerified,
       });
       router.push("/owner/dashboard");
     } catch {

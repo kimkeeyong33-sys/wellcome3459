@@ -11,6 +11,8 @@ export type DemoStoreRow = {
   phone: string;
   pin: string;
   category?: string;
+  businessNumber?: string;
+  businessVerified: boolean;
 };
 
 export type DemoTicketRow = {
@@ -36,17 +38,36 @@ export type DemoTxRow = {
   createdAt: string;
 };
 
+export type DemoPaymentRequestRow = {
+  id: string;
+  code: string;
+  storeId: string;
+  storeName: string;
+  amount: number;
+  validDays: number;
+  memo?: string;
+  status: "pending" | "paid" | "canceled";
+  ticketCode?: string;
+  createdAt: string;
+};
+
 type DemoDB = {
   stores: Map<string, DemoStoreRow>;
   tickets: Map<string, DemoTicketRow>; // key: code
   transactions: DemoTxRow[];
+  paymentRequests: Map<string, DemoPaymentRequestRow>; // key: code
 };
 
 const g = globalThis as unknown as { __ctDemoDB?: DemoDB };
 
 function db(): DemoDB {
   if (!g.__ctDemoDB) {
-    g.__ctDemoDB = { stores: new Map(), tickets: new Map(), transactions: [] };
+    g.__ctDemoDB = {
+      stores: new Map(),
+      tickets: new Map(),
+      transactions: [],
+      paymentRequests: new Map(),
+    };
   }
   return g.__ctDemoDB;
 }
@@ -56,13 +77,20 @@ function nextId(prefix: string) {
   return `demo-${prefix}-${seq++}`;
 }
 
-export function demoCreateStore(input: Omit<DemoStoreRow, "id">): DemoStoreRow {
+export function demoCreateStore(
+  input: Omit<DemoStoreRow, "id" | "businessVerified">
+): DemoStoreRow {
   const { stores } = db();
   const existing = [...stores.values()].find((s) => s.phone === input.phone);
   if (existing) throw new Error("이미 등록된 전화번호예요. 로그인을 이용해주세요.");
-  const row: DemoStoreRow = { id: nextId("store"), ...input };
+  const row: DemoStoreRow = { id: nextId("store"), businessVerified: false, ...input };
   stores.set(row.id, row);
   return row;
+}
+
+export function demoSetBusinessVerified(storeId: string, verified: boolean) {
+  const store = db().stores.get(storeId);
+  if (store) store.businessVerified = verified;
 }
 
 export function demoFindStoreByPhone(phone: string): DemoStoreRow | undefined {
@@ -172,6 +200,58 @@ export function demoGift(code: string, amount: number): DemoTicketRow {
   );
 
   return child;
+}
+
+export function demoCreatePaymentRequest(input: {
+  storeId: string;
+  storeName: string;
+  amount: number;
+  validDays: number;
+  memo?: string;
+}): DemoPaymentRequestRow {
+  const { paymentRequests } = db();
+  let code = generateTicketCode();
+  while (paymentRequests.has(code)) code = generateTicketCode();
+
+  const row: DemoPaymentRequestRow = {
+    id: nextId("pay"),
+    code,
+    storeId: input.storeId,
+    storeName: input.storeName,
+    amount: input.amount,
+    validDays: input.validDays,
+    memo: input.memo,
+    status: "pending",
+    createdAt: new Date().toISOString(),
+  };
+  paymentRequests.set(code, row);
+  return row;
+}
+
+export function demoGetPaymentRequest(code: string): DemoPaymentRequestRow | undefined {
+  return db().paymentRequests.get(code.toUpperCase());
+}
+
+// 데모 모드: 실제 결제 없이 즉시 "결제완료" 처리하고 티켓을 발급합니다.
+export function demoConfirmPaymentRequest(code: string): DemoPaymentRequestRow {
+  const req = demoGetPaymentRequest(code);
+  if (!req) throw new Error("결제 요청을 찾을 수 없어요.");
+  if (req.status !== "pending") {
+    if (req.status === "paid" && req.ticketCode) return req; // 멱등 처리
+    throw new Error("이미 취소된 결제 요청이에요.");
+  }
+
+  const ticket = demoIssueTicket({
+    storeId: req.storeId,
+    storeName: req.storeName,
+    amount: req.amount,
+    validDays: req.validDays,
+    memo: req.memo,
+  });
+
+  req.status = "paid";
+  req.ticketCode = ticket.code;
+  return req;
 }
 
 export function demoDashboard(storeId: string) {

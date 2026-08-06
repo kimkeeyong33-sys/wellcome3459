@@ -10,6 +10,7 @@ import { formatPrice } from "@/lib/format";
 type Ticket = {
   code: string;
   storeName: string;
+  storeVerified: boolean;
   issuedAmount: number;
   balance: number;
   status: string;
@@ -91,7 +92,14 @@ export default function TicketReceivePage({
         className="px-5 pt-7 pb-6 text-white text-center"
         style={{ background: "linear-gradient(135deg, #0B2540, #1B3A5C)" }}
       >
-        <div className="text-white/80 text-sm">{ticket.storeName}</div>
+        <div className="flex items-center justify-center gap-1.5 text-white/80 text-sm">
+          {ticket.storeName}
+          {ticket.storeVerified && (
+            <span className="inline-flex items-center gap-0.5 text-[11px] font-bold bg-white/15 rounded-full px-2 py-0.5">
+              🏅 인증 매장
+            </span>
+          )}
+        </div>
         <h1 className="font-display text-4xl mt-2">{formatPrice(ticket.balance)}</h1>
         <div className="text-white/60 text-xs mt-1">
           {ticket.issuedAmount !== ticket.balance && `발행 금액 ${formatPrice(ticket.issuedAmount)} 중 `}
