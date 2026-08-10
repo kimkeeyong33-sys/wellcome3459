@@ -200,12 +200,7 @@ export default function MyPage() {
       <div className="flex-1 px-5 py-5 flex flex-col gap-6">
         <div>
           <label className="mb-2 flex items-center justify-between">
-            <span className="text-base font-bold text-navy flex items-center gap-1.5">
-              관심 카테고리
-              <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
-                복수선택
-              </span>
-            </span>
+            <span className="text-base font-bold text-navy">관심 카테고리</span>
             <button
               type="button"
               onClick={() =>
@@ -241,12 +236,7 @@ export default function MyPage() {
 
         <div>
           <label className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-bold text-navy flex items-center gap-1.5">
-              관심 지역
-              <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
-                복수선택
-              </span>
-            </span>
+            <span className="text-sm font-bold text-navy">관심 지역</span>
             <button
               type="button"
               onClick={() =>
