@@ -111,7 +111,7 @@ export default function Home() {
       </div>
 
       <div className="px-5 pt-5">
-        <div className="text-base font-bold text-navy mb-3.5">어떤 재고를 찾고 계세요?</div>
+        <div className="text-lg font-bold text-navy mb-3.5">어떤 재고를 찾고 계세요?</div>
         <div className="grid grid-cols-3 gap-2.5">
           {mockCategories.map((c) => {
             const color = categoryColors[c];
