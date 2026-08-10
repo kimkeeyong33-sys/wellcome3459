@@ -41,7 +41,7 @@ function SupportPageInner() {
           <Link href="/" className="bg-white rounded-lg px-3.5 py-2.5 inline-block">
             <img src="/images/logo.png" alt="덤핑점핑" className="h-8 w-auto" />
           </Link>
-          <span className="text-white/50 text-[11px] tracking-wide">Powered by JumpingBid</span>
+          <span className="text-white/70 text-sm tracking-wide">Powered by JumpingBid</span>
         </div>
         <div className="flex items-center justify-between flex-wrap gap-y-1.5">
           <div className="text-xs font-bold tracking-widest whitespace-nowrap" style={{ color: "#FFD166" }}>

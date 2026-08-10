@@ -194,9 +194,9 @@ function SignupPageInner() {
           <Link href="/" className="bg-white rounded-lg px-3.5 py-2.5 inline-block">
             <img src="/images/logo.png" alt="덤핑점핑" className="h-8 w-auto" />
           </Link>
-          <span className="text-white/50 text-[11px] tracking-wide">Powered by JumpingBid</span>
+          <span className="text-white/70 text-sm tracking-wide">Powered by JumpingBid</span>
         </div>
-        <div className="text-xs font-bold tracking-widest" style={{ color: "#FFD166" }}>
+        <div className="text-sm font-bold tracking-widest" style={{ color: "#FFD166" }}>
           3초면 끝나요
         </div>
         <h1 className="font-display text-2xl mt-2 leading-snug">
@@ -204,9 +204,6 @@ function SignupPageInner() {
           <br />
           지역만 골라주세요
         </h1>
-        <p className="text-white/80 text-sm mt-2">
-          이름·사업자등록증은 나중에 점핑매니저가 확인해요.
-        </p>
       </div>
 
       <div className="flex-1 px-5 py-5 flex flex-col gap-6" style={{ paddingBottom: "108px" }}>
