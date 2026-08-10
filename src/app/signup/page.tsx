@@ -7,6 +7,10 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { mockCategories, mockRegions, categoryIcons, categoryColors } from "@/lib/mockData";
 import { subscribeToPush } from "@/lib/pushClient";
 
+const DRAFT_KEY = "dj_signup_draft";
+
+type Draft = { categories: string[]; regions: string[]; isBusiness: boolean };
+
 export default function SignupPage() {
   return (
     <Suspense fallback={null}>
@@ -20,19 +24,10 @@ function SignupPageInner() {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
   const refCode = searchParams.get("ref"); // 추천인의 member id (점핑파트너 트래킹용)
-  const [phone, setPhone] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [verifying, setVerifying] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const [verifiedUserId, setVerifiedUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const id = setInterval(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000);
-    return () => clearInterval(id);
-  }, [resendCooldown]);
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [phone, setPhone] = useState("");
   const [categories, setCategories] = useState<string[]>(["농수축산물", "냉동냉장식품"]);
   const [regions, setRegions] = useState<string[]>(["서울"]);
   const [isBusiness, setIsBusiness] = useState(true);
@@ -43,69 +38,73 @@ function SignupPageInner() {
   );
   const [error, setError] = useState<string | null>(null);
 
+  // 카카오 로그인은 페이지를 완전히 떠났다 돌아오기 때문에, 그 사이 골라둔
+  // 카테고리·지역 선택이 날아가지 않게 sessionStorage에 잠깐 저장해둡니다.
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const draft: Draft = JSON.parse(saved);
+        setCategories(draft.categories);
+        setRegions(draft.regions);
+        setIsBusiness(draft.isBusiness);
+      }
+    } catch {
+      // 저장소 접근 불가 환경 — 무시하고 기본값 사용
+    }
+
+    if (!isSupabaseConfigured || !supabase) {
+      setAuthChecked(true);
+      return;
+    }
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) setAuthUserId(data.session.user.id);
+      setAuthChecked(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthUserId(session?.user.id ?? null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
   const toggle = (list: string[], set: (v: string[]) => void, value: string) => {
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
   };
 
-  const sendOtp = async () => {
+  const startKakaoLogin = async () => {
     setError(null);
-    if (!/^01[0-9]{8,9}$/.test(phone.replace(/-/g, ""))) {
-      setError("휴대폰 번호를 정확히 입력해주세요.");
-      return;
-    }
-    if (!isSupabaseConfigured || !supabase) {
-      // Supabase 미설정 환경(로컬 데모)에서는 인증 자체를 생략합니다.
-      setOtpSent(true);
-      setOtpVerified(true);
-      return;
-    }
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: `+82${phone.replace(/^0/, "").replace(/-/g, "")}`,
-    });
-    if (error) {
-      setError(error.message);
-      return;
-    }
-    setOtpSent(true);
-    setOtpVerified(false);
-    setResendCooldown(60);
-  };
-
-  const resendOtp = async () => {
-    if (resendCooldown > 0) return;
-    setOtp("");
-    await sendOtp();
-  };
-
-  const verifyOtpCode = async () => {
-    setError(null);
-    if (!otp) {
-      setError("인증번호를 입력해주세요.");
-      return;
-    }
-    if (!supabase) return;
-    setVerifying(true);
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: `+82${phone.replace(/^0/, "").replace(/-/g, "")}`,
-        token: otp,
-        type: "sms",
-      });
-      if (error || !data.user) {
-        setError(error?.message ?? "인증번호가 올바르지 않아요. 다시 확인해주세요.");
-        return;
-      }
-      setVerifiedUserId(data.user.id);
-      setOtpVerified(true);
-    } finally {
-      setVerifying(false);
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ categories, regions, isBusiness }));
+    } catch {
+      // 저장소 접근 불가 — 로그인 후 선택값이 초기화될 수 있음
     }
+
+    if (!isSupabaseConfigured || !supabase) {
+      // 로컬 데모: 실제 로그인 없이 완료된 것처럼 진행
+      setAuthUserId("demo-user");
+      return;
+    }
+
+    const params = new URLSearchParams();
+    if (returnTo) params.set("returnTo", returnTo);
+    if (refCode) params.set("ref", refCode);
+    const redirectTo = `${window.location.origin}/signup${params.toString() ? `?${params}` : ""}`;
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "kakao",
+      options: { redirectTo },
+    });
+    if (error) setError(error.message);
   };
 
   const submit = async () => {
     setError(null);
-    if (isSupabaseConfigured && !otpVerified) {
-      setError("휴대폰 인증을 먼저 완료해주세요.");
+    if (!authUserId) {
+      setError("카카오 로그인을 먼저 진행해주세요.");
+      return;
+    }
+    if (!/^01[0-9]{8,9}$/.test(phone.replace(/-/g, ""))) {
+      setError("휴대폰 번호를 정확히 입력해주세요.");
       return;
     }
     if (!agreed) {
@@ -125,6 +124,12 @@ function SignupPageInner() {
     else if (pushResult.status === "unsupported") setPushStatus("unsupported");
     else setPushStatus("granted");
 
+    try {
+      sessionStorage.removeItem(DRAFT_KEY);
+    } catch {
+      // 무시
+    }
+
     if (!isSupabaseConfigured || !supabase) {
       // 데모 모드: 실제 저장 없이 다음 화면으로 이동
       await new Promise((r) => setTimeout(r, 500));
@@ -134,12 +139,7 @@ function SignupPageInner() {
     }
 
     try {
-      const userId = verifiedUserId;
-      if (!userId) {
-        setError("휴대폰 인증을 먼저 완료해주세요.");
-        setSubmitting(false);
-        return;
-      }
+      const userId = authUserId;
 
       await supabase.from("members").upsert({
         id: userId,
@@ -197,7 +197,7 @@ function SignupPageInner() {
           <span className="text-white/50 text-[11px] tracking-wide">Powered by JumpingBid</span>
         </div>
         <div className="text-xs font-bold tracking-widest" style={{ color: "#FFD166" }}>
-          30초면 끝나요
+          3초면 끝나요
         </div>
         <h1 className="font-display text-2xl mt-2 leading-snug">
           알림 받을 카테고리와
@@ -288,70 +288,39 @@ function SignupPageInner() {
 
         <div>
           <label className="text-base font-bold text-navy mb-2 block">
-            알림 받을 번호
+            간편 로그인
             <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full ml-1.5">
               마지막 단계
             </span>
           </label>
-          <div className="flex gap-2">
-            <input
-              className="flex-1 min-w-0 border-2 border-gray200 rounded-xl px-4 text-lg outline-none focus:border-orange"
-              style={{ height: "56px" }}
-              placeholder="010-0000-0000"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              disabled={otpSent}
-            />
-            {!otpSent && (
-              <button
-                onClick={sendOtp}
-                className="text-white font-bold rounded-xl text-base px-5 whitespace-nowrap flex-shrink-0"
-                style={{ background: "#F2891F" }}
-              >
-                인증받기
-              </button>
-            )}
-          </div>
 
-          {/* 실제 인증 진행 중 (인증번호 입력 대기) */}
-          {otpSent && isSupabaseConfigured && !otpVerified && (
-            <div className="mt-2">
-              <div className="flex gap-2">
-                <input
-                  className="flex-1 min-w-0 border-2 border-gray200 rounded-xl px-4 text-lg outline-none focus:border-orange"
-                  style={{ height: "56px" }}
-                  placeholder="인증번호 6자리"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  inputMode="numeric"
-                />
-                <button
-                  onClick={verifyOtpCode}
-                  disabled={verifying}
-                  className="text-white font-bold rounded-xl text-base px-5 whitespace-nowrap disabled:opacity-60 flex-shrink-0"
-                  style={{ background: "#F2891F" }}
-                >
-                  {verifying ? "확인 중..." : "확인"}
-                </button>
-              </div>
-              <button
-                onClick={resendOtp}
-                disabled={resendCooldown > 0}
-                className="text-sm text-gray500 mt-2 py-1 disabled:opacity-50"
-              >
-                {resendCooldown > 0 ? `인증번호 재발송 (${resendCooldown}초 후 가능)` : "인증번호 재발송"}
-              </button>
-            </div>
-          )}
-
-          {/* 인증 완료 표시 */}
-          {otpVerified && (
-            <div
-              className="mt-2 flex items-center gap-1.5 text-sm font-bold rounded-xl px-4"
-              style={{ height: "44px", background: "#E8F8EC", color: "#1D8A44" }}
+          {!authChecked ? (
+            <div className="text-sm text-gray500 py-3">확인 중...</div>
+          ) : !authUserId ? (
+            <button
+              onClick={startKakaoLogin}
+              className="w-full flex items-center justify-center gap-2 rounded-xl font-bold text-base"
+              style={{ background: "#FEE500", color: "#3C1E1E", height: "56px" }}
             >
-              ✓ {isSupabaseConfigured ? "인증 되었습니다" : "인증 완료 (데모 모드 · 실제 인증 생략)"}
-            </div>
+              💬 카카오로 3초 가입하기
+            </button>
+          ) : (
+            <>
+              <div
+                className="flex items-center gap-1.5 text-sm font-bold rounded-xl px-4 mb-3"
+                style={{ height: "44px", background: "#E8F8EC", color: "#1D8A44" }}
+              >
+                ✓ 카카오 로그인 완료
+              </div>
+              <input
+                className="w-full border-2 border-gray200 rounded-xl px-4 text-lg outline-none focus:border-orange"
+                style={{ height: "56px" }}
+                placeholder="010-0000-0000 (점핑매니저 연락용)"
+                inputMode="numeric"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </>
           )}
         </div>
 
@@ -399,7 +368,7 @@ function SignupPageInner() {
       >
         <button
           onClick={submit}
-          disabled={submitting}
+          disabled={submitting || !authUserId}
           className="w-full text-white font-bold rounded-2xl text-lg disabled:opacity-60"
           style={{ background: "linear-gradient(135deg, #D9531E, #F2891F)", padding: "18px 0" }}
         >

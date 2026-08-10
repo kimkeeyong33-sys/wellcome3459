@@ -20,8 +20,10 @@ npm run dev
 1. https://supabase.com 에서 새 프로젝트 생성
 2. 왼쪽 메뉴 **SQL Editor** → `supabase/schema.sql` 내용 전체 복사해서 실행
    (members, deals, categories, regions, interests, seller_requests 등 테이블과 보안 정책이 한 번에 생성됩니다)
-3. **Authentication → Providers → Phone** 활성화
-   - SMS 발송 업체 연동 필요 (Twilio 또는 Vonage를 Supabase가 지원)
+3. **Authentication → Sign In / Providers → Kakao** 활성화
+   - [Kakao Developers](https://developers.kakao.com)에서 애플리케이션 생성 → **제품 설정 → 카카오 로그인** 활성화
+   - **Redirect URI**에 Supabase가 안내하는 콜백 주소(`https://프로젝트ID.supabase.co/auth/v1/callback`)를 그대로 등록
+   - Kakao 앱의 **REST API 키**와 **제품 설정 → 카카오 로그인 → 보안 → Client Secret**(발급 후 활성화)을 Supabase의 Kakao provider 설정 화면 Client ID / Client Secret란에 각각 입력 후 저장
 4. **Project Settings → API**에서 아래 3개 값 복사:
    - Project URL → `NEXT_PUBLIC_SUPABASE_URL`
    - anon public key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
@@ -160,5 +162,5 @@ supabase/
 
 - 하향/상향/역경매/공동구매 등 다양한 거래 방식으로 확장 (Supabase Realtime으로 실시간 가격 갱신, Postgres RPC/트랜잭션으로 동시 입찰 정합성 보장)
 - 알림 클릭률·전환율 통계 대시보드 (`notification_logs`, `interests` 집계)
-- 실제 SMS 인증 연동 강화 (현재 Supabase 미설정 시 인증 단계 스킵)
+- 카카오 비즈니스 인증 통과 후 `phone_number` 스코프로 전화번호 자동 수집 (현재는 로그인 후 직접 입력)
 - 이미지 갤러리 라이트박스(확대보기)
