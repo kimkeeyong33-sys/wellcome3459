@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { mockDeals, mockCategories, mockRegions, categoryIcons, categoryColors, type Deal } from "@/lib/mockData";
 import CountdownBadge from "@/components/CountdownBadge";
+import AdSlot from "@/components/AdSlot";
 import { formatPrice } from "@/lib/format";
 
 export default function DealsPage() {
@@ -255,7 +256,7 @@ function DealsPageInner() {
             <div className="text-center text-gray500 text-base py-10">아직 마감된 매물이 없어요.</div>
           )
         )}
-        {filtered.map((d) => {
+        {filtered.flatMap((d, idx) => {
           const remainPct = Math.round((d.remaining_qty / d.total_qty) * 100);
           const color = categoryColors[d.category] ?? categoryColors["기타"];
           const isClosed = view === "closed";
@@ -267,7 +268,7 @@ function DealsPageInner() {
           const gapVsAvg = avgDiscount !== undefined ? discountPct - avgDiscount : 0;
           const showHotBadge = !isClosed && avgDiscount !== undefined && gapVsAvg >= 8;
 
-          return (
+          const card = (
             <Link
               key={d.id}
               href={`/deals/${d.id}`}
@@ -348,6 +349,10 @@ function DealsPageInner() {
               </div>
             </Link>
           );
+
+          return (idx + 1) % 6 === 0
+            ? [card, <AdSlot key={`ad-${d.id}`} />]
+            : [card];
         })}
 
         <a href="/unsubscribe" className="text-center text-xs text-gray500 underline mt-2 mb-4 py-2">
