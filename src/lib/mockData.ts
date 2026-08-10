@@ -156,3 +156,112 @@ export const mockRegions = [
   "경남",
   "제주",
 ];
+
+// ---------------- 하향경매 (가격이 시간에 따라 자동으로 떨어지는 경매) ----------------
+export type Auction = {
+  id: string;
+  title: string;
+  category: string;
+  region: string;
+  location: string;
+  images?: string[];
+  description?: string;
+  start_price: number; // 시작가
+  floor_price: number; // 더 이상 내려가지 않는 바닥가
+  price_step: number; // 한 번에 내려가는 금액
+  drop_interval_sec: number; // 몇 초마다 내려가는지
+  starts_at: string; // 가격이 내려가기 시작하는 시각 (ISO)
+  ends_at: string; // 경매 마감 시각 (ISO)
+  total_qty: number;
+  remaining_qty: number;
+  status?: "active" | "closed";
+};
+
+export const mockAuctions: Auction[] = [
+  {
+    id: "a1",
+    title: "공장반품 에어프라이어 100대",
+    category: "전자제품",
+    region: "경기",
+    location: "경기 안산",
+    start_price: 89000,
+    floor_price: 39000,
+    price_step: 2000,
+    drop_interval_sec: 600,
+    starts_at: new Date(now - 1000 * 60 * 23).toISOString(),
+    ends_at: new Date(now + 1000 * 60 * 60 * 4).toISOString(),
+    total_qty: 100,
+    remaining_qty: 63,
+    description: "박스 개봉 확인용 반품 · 작동 이상 없음 · 개별 포장 상태 양호 · 1년 무상 A/S 보증서 동봉",
+  },
+  {
+    id: "a2",
+    title: "동절기 이월 패딩 300벌",
+    category: "패션잡화",
+    region: "서울",
+    location: "서울 성수동",
+    start_price: 42000,
+    floor_price: 15000,
+    price_step: 1500,
+    drop_interval_sec: 900,
+    starts_at: new Date(now - 1000 * 60 * 40).toISOString(),
+    ends_at: new Date(now + 1000 * 60 * 60 * 8).toISOString(),
+    total_qty: 300,
+    remaining_qty: 300,
+    description: "전 시즌 이월 재고 · 사이즈 랜덤 혼합 · 택 부착 신품",
+  },
+];
+
+// ---------------- 공동구매 (참여 수량이 늘어날수록 단가가 내려가는 방식) ----------------
+export type GroupBuyTier = { qty: number; price: number };
+
+export type GroupBuy = {
+  id: string;
+  title: string;
+  category: string;
+  region: string;
+  location: string;
+  images?: string[];
+  description?: string;
+  tiers: GroupBuyTier[]; // 수량 오름차순 — 이 수량에 도달하면 해당 단가로 전환됩니다.
+  target_qty: number; // 공동구매가 성사되기 위한 최소 수량
+  current_qty: number;
+  deadline: string; // ISO
+  status?: "open" | "success" | "failed";
+};
+
+export const mockGroupBuys: GroupBuy[] = [
+  {
+    id: "g1",
+    title: "국내산 한우 사골 20kg 박스",
+    category: "농수축산물",
+    region: "경북",
+    location: "경북 안동",
+    tiers: [
+      { qty: 1, price: 89000 },
+      { qty: 10, price: 79000 },
+      { qty: 30, price: 69000 },
+      { qty: 60, price: 59000 },
+    ],
+    target_qty: 10,
+    current_qty: 24,
+    deadline: new Date(now + 1000 * 60 * 60 * 30).toISOString(),
+    description: "박스당 20kg 균일 포장 · 목표 수량 달성 시에만 진행 · 미달 시 전원 자동 취소",
+  },
+  {
+    id: "g2",
+    title: "사무용 A4 복사용지 500매 묶음",
+    category: "생활용품",
+    region: "서울",
+    location: "서울 문래동",
+    tiers: [
+      { qty: 1, price: 4500 },
+      { qty: 20, price: 3800 },
+      { qty: 50, price: 3200 },
+    ],
+    target_qty: 20,
+    current_qty: 9,
+    deadline: new Date(now + 1000 * 60 * 60 * 50).toISOString(),
+    description: "1박스(10묶음) 단위 배송 · 사무실/매장 공동구매 추천",
+  },
+];

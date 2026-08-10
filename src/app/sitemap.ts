@@ -7,6 +7,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${BASE_URL}/`, changeFrequency: "daily", priority: 1 },
     { url: `${BASE_URL}/deals`, changeFrequency: "hourly", priority: 0.9 },
+    { url: `${BASE_URL}/auctions`, changeFrequency: "hourly", priority: 0.8 },
+    { url: `${BASE_URL}/groupbuys`, changeFrequency: "hourly", priority: 0.8 },
     { url: `${BASE_URL}/signup`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE_URL}/support`, changeFrequency: "daily", priority: 0.7 },
     { url: `${BASE_URL}/sell`, changeFrequency: "monthly", priority: 0.6 },
@@ -17,18 +19,44 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   if (!isSupabaseConfigured || !supabase) return staticRoutes;
 
-  const { data } = await supabase
-    .from("deals")
-    .select("id, created_at")
-    .eq("status", "active")
-    .gt("closes_at", new Date().toISOString());
+  const [{ data: deals }, { data: auctions }, { data: groupBuys }] = await Promise.all([
+    supabase
+      .from("deals")
+      .select("id, created_at")
+      .eq("status", "active")
+      .gt("closes_at", new Date().toISOString()),
+    supabase
+      .from("auctions")
+      .select("id, created_at")
+      .eq("status", "active")
+      .gt("ends_at", new Date().toISOString()),
+    supabase
+      .from("group_buys")
+      .select("id, created_at")
+      .eq("status", "open")
+      .gt("deadline", new Date().toISOString()),
+  ]);
 
-  const dealRoutes: MetadataRoute.Sitemap = (data ?? []).map((d) => ({
+  const dealRoutes: MetadataRoute.Sitemap = (deals ?? []).map((d) => ({
     url: `${BASE_URL}/deals/${d.id}`,
     lastModified: d.created_at ? new Date(d.created_at) : undefined,
     changeFrequency: "hourly",
     priority: 0.6,
   }));
 
-  return [...staticRoutes, ...dealRoutes];
+  const auctionRoutes: MetadataRoute.Sitemap = (auctions ?? []).map((a) => ({
+    url: `${BASE_URL}/auctions/${a.id}`,
+    lastModified: a.created_at ? new Date(a.created_at) : undefined,
+    changeFrequency: "hourly",
+    priority: 0.6,
+  }));
+
+  const groupBuyRoutes: MetadataRoute.Sitemap = (groupBuys ?? []).map((g) => ({
+    url: `${BASE_URL}/groupbuys/${g.id}`,
+    lastModified: g.created_at ? new Date(g.created_at) : undefined,
+    changeFrequency: "hourly",
+    priority: 0.6,
+  }));
+
+  return [...staticRoutes, ...dealRoutes, ...auctionRoutes, ...groupBuyRoutes];
 }

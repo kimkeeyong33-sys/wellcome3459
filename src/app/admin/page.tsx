@@ -34,6 +34,31 @@ type ActiveDeal = {
   regions: { name: string } | null;
 };
 
+type ActiveAuction = {
+  id: string;
+  title: string;
+  start_price: number;
+  floor_price: number;
+  price_step: number;
+  drop_interval_sec: number;
+  total_qty: number;
+  remaining_qty: number;
+  ends_at: string;
+  categories: { name: string } | null;
+  regions: { name: string } | null;
+};
+
+type ActiveGroupBuy = {
+  id: string;
+  title: string;
+  tiers: { qty: number; price: number }[];
+  target_qty: number;
+  current_qty: number;
+  deadline: string;
+  categories: { name: string } | null;
+  regions: { name: string } | null;
+};
+
 export default function AdminPage() {
   const [key, setKey] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -106,9 +131,13 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
   const [requests, setRequests] = useState<SellerRequest[]>([]);
   const [buyRequests, setBuyRequests] = useState<BuyRequest[]>([]);
   const [activeDeals, setActiveDeals] = useState<ActiveDeal[]>([]);
+  const [activeAuctions, setActiveAuctions] = useState<ActiveAuction[]>([]);
+  const [activeGroupBuys, setActiveGroupBuys] = useState<ActiveGroupBuy[]>([]);
   const [interests, setInterests] = useState<Interest[]>([]);
   const [loading, setLoading] = useState(true);
   const [openFormFor, setOpenFormFor] = useState<string | "new" | null>(null);
+  const [showAuctionForm, setShowAuctionForm] = useState(false);
+  const [showGroupBuyForm, setShowGroupBuyForm] = useState(false);
   const [authError, setAuthError] = useState(false);
 
   const load = () => {
@@ -130,12 +159,20 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
       fetch("/api/admin/buy-requests", { headers: { "x-admin-key": adminKey } }).then((res) =>
         res.json()
       ),
+      fetch("/api/admin/auctions/manage", { headers: { "x-admin-key": adminKey } }).then((res) =>
+        res.json()
+      ),
+      fetch("/api/admin/groupbuys/manage", { headers: { "x-admin-key": adminKey } }).then((res) =>
+        res.json()
+      ),
     ])
-      .then(([reqData, dealData, interestData, buyData]) => {
+      .then(([reqData, dealData, interestData, buyData, auctionData, groupBuyData]) => {
         setRequests(reqData.items ?? []);
         setActiveDeals(dealData.items ?? []);
         setInterests(interestData.items ?? []);
         setBuyRequests(buyData.items ?? []);
+        setActiveAuctions(auctionData.items ?? []);
+        setActiveGroupBuys(groupBuyData.items ?? []);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -368,6 +405,56 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
         )}
         {activeDeals.map((d) => (
           <ActiveDealCard key={d.id} deal={d} adminKey={adminKey} onChanged={load} />
+        ))}
+      </div>
+
+      <div className="px-5 pb-4">
+        <button
+          onClick={() => setShowAuctionForm((v) => !v)}
+          className="w-full text-white font-bold rounded-xl text-base"
+          style={{ background: "linear-gradient(135deg, #3D2266, #6C3FC2)", padding: "14px 0" }}
+        >
+          {showAuctionForm ? "닫기" : "+ 새 하향경매 등록"}
+        </button>
+        {showAuctionForm && (
+          <AuctionForm adminKey={adminKey} onDone={() => { setShowAuctionForm(false); load(); }} />
+        )}
+      </div>
+
+      <div className="px-5 pb-6 flex flex-col gap-3">
+        <div className="text-sm font-bold text-gray500">
+          진행 중인 하향경매 ({activeAuctions.length})
+        </div>
+        {!loading && activeAuctions.length === 0 && (
+          <div className="text-center text-gray500 py-6 text-sm">진행 중인 하향경매가 없어요.</div>
+        )}
+        {activeAuctions.map((a) => (
+          <ActiveAuctionCard key={a.id} auction={a} adminKey={adminKey} onChanged={load} />
+        ))}
+      </div>
+
+      <div className="px-5 pb-4">
+        <button
+          onClick={() => setShowGroupBuyForm((v) => !v)}
+          className="w-full text-white font-bold rounded-xl text-base"
+          style={{ background: "linear-gradient(135deg, #0E5C4A, #17B884)", padding: "14px 0" }}
+        >
+          {showGroupBuyForm ? "닫기" : "+ 새 공동구매 등록"}
+        </button>
+        {showGroupBuyForm && (
+          <GroupBuyForm adminKey={adminKey} onDone={() => { setShowGroupBuyForm(false); load(); }} />
+        )}
+      </div>
+
+      <div className="px-5 pb-6 flex flex-col gap-3">
+        <div className="text-sm font-bold text-gray500">
+          진행 중인 공동구매 ({activeGroupBuys.length})
+        </div>
+        {!loading && activeGroupBuys.length === 0 && (
+          <div className="text-center text-gray500 py-6 text-sm">진행 중인 공동구매가 없어요.</div>
+        )}
+        {activeGroupBuys.map((g) => (
+          <ActiveGroupBuyCard key={g.id} groupBuy={g} adminKey={adminKey} onChanged={load} />
         ))}
       </div>
 
@@ -843,6 +930,488 @@ function DealForm({
         style={{ background: "#0B2540", padding: "12px 0" }}
       >
         {submitting ? "등록 중..." : "매물 등록 확정"}
+      </button>
+    </div>
+  );
+}
+
+function ActiveAuctionCard({
+  auction,
+  adminKey,
+  onChanged,
+}: {
+  auction: ActiveAuction;
+  adminKey: string;
+  onChanged: () => void;
+}) {
+  const [saving, setSaving] = useState(false);
+
+  const close = async () => {
+    if (!confirm("이 하향경매를 지금 조기 마감할까요?")) return;
+    setSaving(true);
+    try {
+      await fetch("/api/admin/auctions/manage", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+        body: JSON.stringify({ id: auction.id, status: "closed" }),
+      });
+      onChanged();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white border border-gray200 rounded-2xl px-4 py-4">
+      <div className="flex items-center gap-1.5 text-xs font-bold text-gray500">
+        <span>{categoryIcons[auction.categories?.name ?? ""] ?? "🗂️"}</span>
+        {auction.categories?.name} · {auction.regions?.name}
+      </div>
+      <div className="text-base font-bold text-gray900 mt-1.5">{auction.title}</div>
+      <div className="text-sm text-gray500 mt-1">
+        {auction.start_price.toLocaleString()}원 → 바닥가 {auction.floor_price.toLocaleString()}원 ·{" "}
+        {auction.drop_interval_sec / 60}분마다 {auction.price_step.toLocaleString()}원↓
+      </div>
+      <div className="text-sm text-gray500 mt-1">
+        잔여 {auction.remaining_qty} / {auction.total_qty}개 · 마감{" "}
+        {new Date(auction.ends_at).toLocaleString("ko-KR", {
+          month: "numeric",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </div>
+      <button
+        onClick={close}
+        disabled={saving}
+        className="w-full mt-3 text-xs font-bold text-orange border-2 border-orange rounded-lg py-2"
+      >
+        조기 마감
+      </button>
+    </div>
+  );
+}
+
+function ActiveGroupBuyCard({
+  groupBuy,
+  adminKey,
+  onChanged,
+}: {
+  groupBuy: ActiveGroupBuy;
+  adminKey: string;
+  onChanged: () => void;
+}) {
+  const [saving, setSaving] = useState(false);
+
+  const patch = async (status: "success" | "failed") => {
+    const msg = status === "success" ? "목표 수량 달성으로 확정할까요?" : "성사되지 않은 것으로 취소할까요?";
+    if (!confirm(msg)) return;
+    setSaving(true);
+    try {
+      await fetch("/api/admin/groupbuys/manage", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+        body: JSON.stringify({ id: groupBuy.id, status }),
+      });
+      onChanged();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white border border-gray200 rounded-2xl px-4 py-4">
+      <div className="flex items-center gap-1.5 text-xs font-bold text-gray500">
+        <span>{categoryIcons[groupBuy.categories?.name ?? ""] ?? "🗂️"}</span>
+        {groupBuy.categories?.name} · {groupBuy.regions?.name}
+      </div>
+      <div className="text-base font-bold text-gray900 mt-1.5">{groupBuy.title}</div>
+      <div className="text-sm text-gray500 mt-1">
+        참여 {groupBuy.current_qty} / 목표 {groupBuy.target_qty}개 · 마감{" "}
+        {new Date(groupBuy.deadline).toLocaleString("ko-KR", {
+          month: "numeric",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </div>
+      <div className="text-sm text-gray500 mt-1">
+        {groupBuy.tiers.map((t) => `${t.qty}개↑ ${t.price.toLocaleString()}원`).join(" · ")}
+      </div>
+      <div className="flex gap-2 mt-3">
+        <button
+          onClick={() => patch("success")}
+          disabled={saving}
+          className="flex-1 text-xs font-bold rounded-lg py-2"
+          style={{ background: "#E8F8EC", color: "#1D8A44" }}
+        >
+          ✓ 목표 달성 확정
+        </button>
+        <button
+          onClick={() => patch("failed")}
+          disabled={saving}
+          className="flex-1 text-xs font-bold rounded-lg py-2 bg-gray100 text-gray500"
+        >
+          성사 불발 취소
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AuctionForm({ adminKey, onDone }: { adminKey: string; onDone: () => void }) {
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState(mockCategories[0]);
+  const [region, setRegion] = useState(mockRegions[0]);
+  const [location, setLocation] = useState("");
+  const [startPrice, setStartPrice] = useState("");
+  const [floorPrice, setFloorPrice] = useState("");
+  const [priceStep, setPriceStep] = useState("");
+  const [dropIntervalMin, setDropIntervalMin] = useState("10");
+  const [totalQty, setTotalQty] = useState("");
+  const [durationHours, setDurationHours] = useState("24");
+  const [images, setImages] = useState<string[]>([]);
+  const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async () => {
+    setError(null);
+    if (!title || !startPrice || !floorPrice || !priceStep || !totalQty) {
+      setError("상품명·시작가·바닥가·하락폭·수량은 필수예요.");
+      return;
+    }
+    setSubmitting(true);
+    const endsAt = new Date(Date.now() + Number(durationHours) * 3600 * 1000).toISOString();
+    try {
+      const res = await fetch("/api/admin/auctions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+        body: JSON.stringify({
+          title,
+          category,
+          region,
+          location,
+          startPrice: parsePriceInput(startPrice),
+          floorPrice: parsePriceInput(floorPrice),
+          priceStep: parsePriceInput(priceStep),
+          dropIntervalSec: Number(dropIntervalMin) * 60,
+          totalQty: Number(totalQty),
+          endsAt,
+          images,
+          description,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error);
+      }
+      onDone();
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : "등록에 실패했어요.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 bg-gray100 rounded-xl p-3.5 flex flex-col gap-3">
+      <input
+        className="border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange"
+        placeholder="상품명 *"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+      />
+      <div className="flex gap-2">
+        <select
+          className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
+          {mockCategories.map((c) => (
+            <option key={c} value={c}>
+              {categoryIcons[c]} {c}
+            </option>
+          ))}
+        </select>
+        <select
+          className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm"
+          value={region}
+          onChange={(e) => setRegion(e.target.value)}
+        >
+          {mockRegions.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+      </div>
+      <input
+        className="border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange"
+        placeholder="지역 상세 (예: 경기 안산)"
+        value={location}
+        onChange={(e) => setLocation(e.target.value)}
+      />
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <input
+            type="text"
+            inputMode="numeric"
+            className="w-full border-2 border-gray200 rounded-lg pl-3 pr-8 py-2.5 text-sm outline-none focus:border-orange"
+            placeholder="시작가 *"
+            value={formatPriceInput(startPrice)}
+            onChange={(e) => setStartPrice(e.target.value)}
+          />
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray500">원</span>
+        </div>
+        <div className="relative flex-1">
+          <input
+            type="text"
+            inputMode="numeric"
+            className="w-full border-2 border-gray200 rounded-lg pl-3 pr-8 py-2.5 text-sm outline-none focus:border-orange"
+            placeholder="바닥가(최저가) *"
+            value={formatPriceInput(floorPrice)}
+            onChange={(e) => setFloorPrice(e.target.value)}
+          />
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray500">원</span>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <input
+            type="text"
+            inputMode="numeric"
+            className="w-full border-2 border-gray200 rounded-lg pl-3 pr-8 py-2.5 text-sm outline-none focus:border-orange"
+            placeholder="한 번에 내릴 금액 *"
+            value={formatPriceInput(priceStep)}
+            onChange={(e) => setPriceStep(e.target.value)}
+          />
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray500">원</span>
+        </div>
+        <select
+          className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm"
+          value={dropIntervalMin}
+          onChange={(e) => setDropIntervalMin(e.target.value)}
+        >
+          <option value="1">1분마다</option>
+          <option value="5">5분마다</option>
+          <option value="10">10분마다</option>
+          <option value="30">30분마다</option>
+          <option value="60">1시간마다</option>
+        </select>
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="number"
+          className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange"
+          placeholder="총 수량 *"
+          value={totalQty}
+          onChange={(e) => setTotalQty(e.target.value)}
+        />
+        <select
+          className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm"
+          value={durationHours}
+          onChange={(e) => setDurationHours(e.target.value)}
+        >
+          <option value="3">3시간 진행</option>
+          <option value="12">12시간 진행</option>
+          <option value="24">24시간 진행</option>
+          <option value="72">3일 진행</option>
+        </select>
+      </div>
+
+      <textarea
+        className="border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-trustBlue"
+        rows={2}
+        placeholder="상세 설명 (선택)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
+
+      {error && <div className="text-xs text-orange font-medium">{error}</div>}
+
+      <ImageUploader onChange={setImages} label="상품 사진" hint="최대 4장" />
+
+      <button
+        onClick={submit}
+        disabled={submitting}
+        className="text-white font-bold rounded-lg text-sm disabled:opacity-60"
+        style={{ background: "#6C3FC2", padding: "12px 0" }}
+      >
+        {submitting ? "등록 중..." : "하향경매 등록 확정"}
+      </button>
+    </div>
+  );
+}
+
+function GroupBuyForm({ adminKey, onDone }: { adminKey: string; onDone: () => void }) {
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState(mockCategories[0]);
+  const [region, setRegion] = useState(mockRegions[0]);
+  const [location, setLocation] = useState("");
+  const [tiers, setTiers] = useState([
+    { qty: "1", price: "" },
+    { qty: "", price: "" },
+    { qty: "", price: "" },
+  ]);
+  const [targetQty, setTargetQty] = useState("");
+  const [durationHours, setDurationHours] = useState("72");
+  const [images, setImages] = useState<string[]>([]);
+  const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const updateTier = (i: number, field: "qty" | "price", value: string) => {
+    setTiers((prev) => prev.map((t, idx) => (idx === i ? { ...t, [field]: value } : t)));
+  };
+
+  const submit = async () => {
+    setError(null);
+    const validTiers = tiers
+      .filter((t) => t.qty && t.price)
+      .map((t) => ({ qty: Number(t.qty), price: parsePriceInput(t.price) }));
+
+    if (!title || validTiers.length === 0 || !targetQty) {
+      setError("상품명·최소 1개 이상의 수량별 단가·목표 수량은 필수예요.");
+      return;
+    }
+    setSubmitting(true);
+    const deadline = new Date(Date.now() + Number(durationHours) * 3600 * 1000).toISOString();
+    try {
+      const res = await fetch("/api/admin/groupbuys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+        body: JSON.stringify({
+          title,
+          category,
+          region,
+          location,
+          tiers: validTiers,
+          targetQty: Number(targetQty),
+          deadline,
+          images,
+          description,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error);
+      }
+      onDone();
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : "등록에 실패했어요.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 bg-gray100 rounded-xl p-3.5 flex flex-col gap-3">
+      <input
+        className="border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange"
+        placeholder="상품명 *"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+      />
+      <div className="flex gap-2">
+        <select
+          className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
+          {mockCategories.map((c) => (
+            <option key={c} value={c}>
+              {categoryIcons[c]} {c}
+            </option>
+          ))}
+        </select>
+        <select
+          className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm"
+          value={region}
+          onChange={(e) => setRegion(e.target.value)}
+        >
+          {mockRegions.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+      </div>
+      <input
+        className="border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange"
+        placeholder="지역 상세 (예: 경북 안동)"
+        value={location}
+        onChange={(e) => setLocation(e.target.value)}
+      />
+
+      <div>
+        <label className="text-xs font-bold text-gray500 mb-1.5 block">
+          수량별 단가 * (수량이 늘수록 저렴해지도록 순서대로 입력)
+        </label>
+        <div className="flex flex-col gap-1.5">
+          {tiers.map((t, i) => (
+            <div key={i} className="flex gap-2">
+              <input
+                type="number"
+                className="w-24 border-2 border-gray200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange"
+                placeholder="수량"
+                value={t.qty}
+                onChange={(e) => updateTier(i, "qty", e.target.value)}
+              />
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  className="w-full border-2 border-gray200 rounded-lg pl-3 pr-8 py-2 text-sm outline-none focus:border-orange"
+                  placeholder="개당 단가"
+                  value={formatPriceInput(t.price)}
+                  onChange={(e) => updateTier(i, "price", e.target.value)}
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray500">원</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          type="number"
+          className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange"
+          placeholder="성사 최소 수량 *"
+          value={targetQty}
+          onChange={(e) => setTargetQty(e.target.value)}
+        />
+        <select
+          className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm"
+          value={durationHours}
+          onChange={(e) => setDurationHours(e.target.value)}
+        >
+          <option value="24">24시간 진행</option>
+          <option value="72">3일 진행</option>
+          <option value="168">7일 진행</option>
+        </select>
+      </div>
+
+      <textarea
+        className="border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-trustBlue"
+        rows={2}
+        placeholder="상세 설명 (선택)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
+
+      {error && <div className="text-xs text-orange font-medium">{error}</div>}
+
+      <ImageUploader onChange={setImages} label="상품 사진" hint="최대 4장" />
+
+      <button
+        onClick={submit}
+        disabled={submitting}
+        className="text-white font-bold rounded-lg text-sm disabled:opacity-60"
+        style={{ background: "#17B884", padding: "12px 0" }}
+      >
+        {submitting ? "등록 중..." : "공동구매 등록 확정"}
       </button>
     </div>
   );

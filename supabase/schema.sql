@@ -209,6 +209,110 @@ create policy "buy_requests_public_insert" on public.buy_requests
 -- 점핑파트너(추천인) 기능 — 누가 누구를 추천해서 가입했는지 추적 (리워드 없는 트래킹 전용)
 alter table public.members add column if not exists referred_by uuid references public.members(id);
 
+-- 11. 하향경매 — 시간이 지날수록 가격이 자동으로 내려가고, 원하는 가격에 먼저 구매하면 됩니다.
+create table if not exists public.auctions (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  category_id int references public.categories(id),
+  region_id int references public.regions(id),
+  location text,
+  images text[] default '{}',
+  description text,
+  start_price numeric not null,
+  floor_price numeric not null,
+  price_step numeric not null,
+  drop_interval_sec int not null default 600,
+  starts_at timestamptz not null default now(),
+  ends_at timestamptz not null,
+  total_qty int not null,
+  remaining_qty int not null,
+  status text default 'active', -- active | closed
+  created_at timestamptz default now()
+);
+
+-- 12. 하향경매 구매 신청(리드) — 매물과 마찬가지로 실제 결제는 점핑매니저가 연락해서 진행합니다.
+create table if not exists public.auction_orders (
+  id uuid primary key default gen_random_uuid(),
+  auction_id uuid references public.auctions(id) on delete cascade,
+  member_id uuid references public.members(id),
+  phone text not null,
+  quantity int not null default 1,
+  price_at_order numeric not null,
+  contacted boolean default false,
+  created_at timestamptz default now()
+);
+
+-- 13. 공동구매 — 참여 수량이 목표 구간을 넘길 때마다 단가가 내려갑니다.
+create table if not exists public.group_buys (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  category_id int references public.categories(id),
+  region_id int references public.regions(id),
+  location text,
+  images text[] default '{}',
+  description text,
+  tiers jsonb not null default '[]', -- [{"qty":1,"price":12000}, ...] qty 오름차순
+  target_qty int not null, -- 공동구매 성사를 위한 최소 수량
+  current_qty int not null default 0,
+  deadline timestamptz not null,
+  status text default 'open', -- open | success | failed
+  created_at timestamptz default now()
+);
+
+-- 14. 공동구매 참여 신청(리드)
+create table if not exists public.group_buy_orders (
+  id uuid primary key default gen_random_uuid(),
+  group_buy_id uuid references public.group_buys(id) on delete cascade,
+  member_id uuid references public.members(id),
+  phone text not null,
+  quantity int not null default 1,
+  contacted boolean default false,
+  created_at timestamptz default now()
+);
+
+-- 동시에 여러 명이 구매/참여해도 재고·수량이 꼬이지 않도록 원자적으로 처리하는 함수입니다.
+create or replace function public.place_auction_order(
+  p_auction_id uuid, p_member_id uuid, p_phone text, p_quantity int, p_price numeric
+) returns void as $$
+begin
+  update public.auctions
+    set remaining_qty = remaining_qty - p_quantity
+    where id = p_auction_id and status = 'active' and remaining_qty >= p_quantity;
+  if not found then
+    raise exception '남은 재고가 부족합니다.';
+  end if;
+
+  insert into public.auction_orders (auction_id, member_id, phone, quantity, price_at_order)
+  values (p_auction_id, p_member_id, p_phone, p_quantity, p_price);
+end;
+$$ language plpgsql security definer;
+
+create or replace function public.join_group_buy(
+  p_group_buy_id uuid, p_member_id uuid, p_phone text, p_quantity int
+) returns void as $$
+begin
+  update public.group_buys
+    set current_qty = current_qty + p_quantity
+    where id = p_group_buy_id and status = 'open';
+  if not found then
+    raise exception '지금은 참여할 수 없는 공동구매입니다.';
+  end if;
+
+  insert into public.group_buy_orders (group_buy_id, member_id, phone, quantity)
+  values (p_group_buy_id, p_member_id, p_phone, p_quantity);
+end;
+$$ language plpgsql security definer;
+
+alter table public.auctions enable row level security;
+alter table public.auction_orders enable row level security;
+alter table public.group_buys enable row level security;
+alter table public.group_buy_orders enable row level security;
+
+create policy "auctions_public_select" on public.auctions for select using (true);
+create policy "group_buys_public_select" on public.group_buys for select using (true);
+-- auction_orders / group_buy_orders는 place_auction_order / join_group_buy 함수(security definer)를 통해서만 기록되고,
+-- 조회는 관리자(서비스 키)만 하므로 별도의 public select/insert 정책은 두지 않습니다.
+
 -- ---------------- Storage (매물 사진 저장용) ----------------
 -- 아래는 SQL Editor가 아니라 Supabase 대시보드 → Storage 메뉴에서 수동으로 설정하세요:
 -- 1. "New bucket" → 이름: deal-images, Public bucket 체크 (누구나 읽기 가능하게)

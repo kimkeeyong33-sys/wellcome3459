@@ -231,6 +231,29 @@ export default function Home() {
 
         <div className="grid grid-cols-2 gap-2.5 mt-2">
           <Link
+            href="/auctions"
+            className="flex flex-col rounded-2xl px-4 py-3.5 bg-white"
+            style={{ border: "2px solid rgba(108,63,194,0.35)" }}
+          >
+            <div className="text-sm font-bold text-navy">📉 하향경매</div>
+            <div className="text-xs font-bold mt-0.5" style={{ color: "#6C3FC2" }}>
+              시간마다 가격이 내려가요 →
+            </div>
+          </Link>
+          <Link
+            href="/groupbuys"
+            className="flex flex-col rounded-2xl px-4 py-3.5 bg-white"
+            style={{ border: "2px solid rgba(23,184,132,0.35)" }}
+          >
+            <div className="text-sm font-bold text-navy">🤝 공동구매</div>
+            <div className="text-xs font-bold mt-0.5" style={{ color: "#0E5C4A" }}>
+              모일수록 더 저렴해져요 →
+            </div>
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5 mt-2">
+          <Link
             href="/buy"
             className="flex flex-col rounded-2xl px-4 py-3.5 bg-white"
             style={{ border: "2px solid rgba(242,137,31,0.45)" }}
