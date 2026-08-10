@@ -201,8 +201,8 @@ export default function Home() {
       <div className="mt-9 px-5 flex flex-col gap-3" style={{ paddingBottom: "108px" }}>
         <Link
           href="/deals"
-          className="border-2 border-gray200 text-navy text-center font-bold rounded-2xl text-base"
-          style={{ padding: "15px 0" }}
+          className="border-2 text-navy text-center font-bold rounded-2xl text-base"
+          style={{ padding: "15px 0", borderColor: "rgba(11,37,64,0.25)" }}
         >
           오늘 등록된 매물 보기
         </Link>
@@ -211,14 +211,14 @@ export default function Home() {
           <Link
             href="/support"
             className="text-center font-bold rounded-xl text-sm"
-            style={{ border: "1.5px solid #E4E7EB", color: "#6B7480", padding: "13px 0" }}
+            style={{ border: "1.5px solid #C7CBD1", color: "#3D4A66", padding: "13px 0" }}
           >
             🏛️ 정부지원금
           </Link>
           <Link
             href="/logistics"
             className="text-center font-bold rounded-xl text-sm"
-            style={{ border: "1.5px solid #E4E7EB", color: "#6B7480", padding: "13px 0" }}
+            style={{ border: "1.5px solid #C7CBD1", color: "#3D4A66", padding: "13px 0" }}
           >
             🚚 점핑전국물류
           </Link>
@@ -227,19 +227,23 @@ export default function Home() {
         <div className="grid grid-cols-2 gap-2.5 mt-2">
           <Link
             href="/buy"
-            className="flex flex-col rounded-2xl px-4 py-3.5"
-            style={{ background: "#F5F6F8" }}
+            className="flex flex-col rounded-2xl px-4 py-3.5 bg-white"
+            style={{ border: "2px solid rgba(242,137,31,0.45)" }}
           >
             <div className="text-sm font-bold text-navy">🔍 이런 재고 찾습니다</div>
-            <div className="text-xs text-gray500 mt-0.5">구매 희망 등록</div>
+            <div className="text-xs font-bold mt-0.5" style={{ color: "#D9531E" }}>
+              구매 희망 등록 →
+            </div>
           </Link>
           <Link
             href="/sell"
-            className="flex flex-col rounded-2xl px-4 py-3.5"
-            style={{ background: "#F5F6F8" }}
+            className="flex flex-col rounded-2xl px-4 py-3.5 bg-white"
+            style={{ border: "2px solid rgba(242,137,31,0.45)" }}
           >
             <div className="text-sm font-bold text-navy">📦 재고가 남으셨나요?</div>
-            <div className="text-xs text-gray500 mt-0.5">판매 등록은 무료</div>
+            <div className="text-xs font-bold mt-0.5" style={{ color: "#D9531E" }}>
+              판매 등록은 무료 →
+            </div>
           </Link>
         </div>
       </div>
