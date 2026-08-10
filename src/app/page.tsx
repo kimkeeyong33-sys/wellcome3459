@@ -10,14 +10,15 @@ import InstallAppButton from "@/components/InstallAppButton";
 
 const TODAY_BADGE_THRESHOLD = 5; // 이보다 적으면 "오늘 N건" 배너를 아예 숨김 (빈약한 숫자 노출 방지)
 
+const EXAMPLE_DEALS = mockDeals.filter((d) => d.status !== "closed").slice(0, 3);
+
 export default function Home() {
   const [todayCount, setTodayCount] = useState(0);
-  const [preview, setPreview] = useState<Deal[]>(
-    isSupabaseConfigured ? [] : mockDeals.filter((d) => d.status !== "closed").slice(0, 3)
-  );
+  const [preview, setPreview] = useState<Deal[]>(EXAMPLE_DEALS);
+  const [isExample, setIsExample] = useState(true);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) return; // 데모 모드: 실제 집계 없이 조용히 숨김
+    if (!isSupabaseConfigured || !supabase) return; // 데모 모드: 예시 매물 그대로 노출
 
     (async () => {
       const todayStart = new Date();
@@ -41,7 +42,7 @@ export default function Home() {
       ]);
 
       setTodayCount(count ?? 0);
-      if (previewData) {
+      if (previewData && previewData.length > 0) {
         setPreview(
           previewData.map((d) => ({
             id: d.id,
@@ -57,7 +58,10 @@ export default function Home() {
             images: d.images ?? [],
           }))
         );
+        setIsExample(false);
       }
+      // 실제 매물이 아직 없으면 예시(EXAMPLE_DEALS)를 그대로 보여줘서
+      // "이런 특가 알림이 온다"는 감을 주고, 빈 화면으로 밋밋해지는 걸 막습니다.
     })();
   }, []);
 
@@ -128,10 +132,19 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 매물 예시 — 실제로 어떤 물건이 올라오는지 미리 보여줌 */}
+      {/* 매물 예시 — 실제 매물이 있으면 실제로, 없으면 예시로 "이런 특가가 온다"는 감을 줌 */}
       {preview.length > 0 && (
         <div className="px-5 pt-8">
-          <div className="text-base font-bold text-navy mb-3.5">이런 매물이 올라와요</div>
+          <div className="flex items-center gap-1.5 mb-3.5">
+            <div className="text-base font-bold text-navy">
+              {isExample ? "가입하면 이런 특가 알림이 와요" : "오늘 이런 매물이 올라왔어요"}
+            </div>
+            {isExample && (
+              <span className="text-xs font-bold text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
+                예시
+              </span>
+            )}
+          </div>
           <div className="flex flex-col gap-2.5">
             {preview.map((d) => {
               const color = categoryColors[d.category] ?? categoryColors["기타"];
@@ -141,33 +154,46 @@ export default function Home() {
               return (
                 <Link
                   key={d.id}
-                  href={`/deals/${d.id}`}
-                  className="flex items-center gap-3 rounded-2xl border border-gray200 px-3.5 py-3 active:scale-[0.98] transition-transform"
+                  href={isExample ? "/signup" : `/deals/${d.id}`}
+                  className="relative flex items-center gap-3 rounded-2xl border border-gray200 px-3.5 py-3 overflow-hidden active:scale-[0.98] transition-transform"
                 >
+                  {discountPct > 0 && (
+                    <div
+                      className="absolute top-0 right-0 text-sm font-black text-white px-3 py-1.5 rounded-bl-2xl"
+                      style={{ background: "linear-gradient(135deg, #D9531E, #F2891F)" }}
+                    >
+                      -{discountPct}%
+                    </div>
+                  )}
                   <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+                    className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
                     style={{ background: color.bg }}
                   >
                     {categoryIcons[d.category] ?? "🗂️"}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 pr-10">
                     <div className="text-sm font-bold text-navy truncate">{d.title}</div>
                     <div className="text-xs text-gray500 mt-0.5">
                       {d.category} · {d.location}
                     </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-sm font-black text-navy">{formatPrice(d.deal_price)}</div>
-                    {discountPct > 0 && (
-                      <div className="text-xs font-bold" style={{ color: "#C2410C" }}>
-                        -{discountPct}%
-                      </div>
-                    )}
+                    <div className="flex items-baseline gap-1.5 mt-1.5">
+                      <span className="text-lg font-black" style={{ color: color.text }}>
+                        {formatPrice(d.deal_price)}
+                      </span>
+                      <span className="text-xs text-gray500 line-through">
+                        {formatPrice(d.original_price)}
+                      </span>
+                    </div>
                   </div>
                 </Link>
               );
             })}
           </div>
+          {isExample && (
+            <p className="text-xs text-gray500 mt-2.5 text-center leading-relaxed">
+              지금 가입하면 이런 특가를 실제로 가장 먼저 알려드려요 🔔
+            </p>
+          )}
         </div>
       )}
 
