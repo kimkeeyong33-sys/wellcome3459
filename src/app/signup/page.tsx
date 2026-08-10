@@ -211,11 +211,22 @@ function SignupPageInner() {
 
       <div className="flex-1 px-5 py-5 flex flex-col gap-6" style={{ paddingBottom: "108px" }}>
         <div>
-          <label className="text-base font-bold text-navy mb-2 flex items-center gap-1.5">
-            관심 카테고리
-            <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
-              복수선택
+          <label className="mb-2 flex items-center justify-between">
+            <span className="text-base font-bold text-navy flex items-center gap-1.5">
+              관심 카테고리
+              <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
+                복수선택
+              </span>
             </span>
+            <button
+              type="button"
+              onClick={() =>
+                setCategories(categories.length === mockCategories.length ? [] : [...mockCategories])
+              }
+              className="text-xs font-bold text-orange"
+            >
+              {categories.length === mockCategories.length ? "전체 해제" : "전체 선택"}
+            </button>
           </label>
           <div className="grid grid-cols-3 gap-2">
             {mockCategories.map((c) => {
@@ -241,11 +252,22 @@ function SignupPageInner() {
         </div>
 
         <div>
-          <label className="text-base font-bold text-navy mb-2 flex items-center gap-1.5">
-            관심 지역
-            <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
-              복수선택
+          <label className="mb-2 flex items-center justify-between">
+            <span className="text-base font-bold text-navy flex items-center gap-1.5">
+              관심 지역
+              <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
+                복수선택
+              </span>
             </span>
+            <button
+              type="button"
+              onClick={() =>
+                setRegions(regions.length === mockRegions.length ? [] : [...mockRegions])
+              }
+              className="text-xs font-bold text-orange"
+            >
+              {regions.length === mockRegions.length ? "전체 해제" : "전체 선택"}
+            </button>
           </label>
           <div className="grid grid-cols-4 gap-2">
             {mockRegions.map((r) => (
