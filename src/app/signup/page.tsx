@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { mockCategories, mockRegions, categoryIcons, categoryColors } from "@/lib/mockData";
 import { subscribeToPush } from "@/lib/pushClient";
+import { generateRefCode } from "@/lib/refCode";
 
 const DRAFT_KEY = "dj_signup_draft";
 
@@ -141,11 +142,35 @@ function SignupPageInner() {
     try {
       const userId = authUserId;
 
+      // 추천 링크(?ref=짧은코드)로 들어왔으면 코드를 추천인의 실제 회원 id로 변환
+      let referredById: string | null = null;
+      if (refCode) {
+        try {
+          const res = await fetch("/api/resolve-ref", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: refCode }),
+          });
+          const resolved = await res.json();
+          if (resolved.id && resolved.id !== userId) referredById = resolved.id;
+        } catch {
+          // 추천인 코드 조회 실패 — 트래킹 없이 가입은 그대로 진행
+        }
+      }
+
+      // 이미 내 코드가 있으면 재사용, 없으면 새로 발급 (회원가입 재시도 시 코드가 바뀌지 않도록)
+      const { data: existingMember } = await supabase
+        .from("members")
+        .select("ref_code")
+        .eq("id", userId)
+        .maybeSingle();
+
       await supabase.from("members").upsert({
         id: userId,
         phone,
         is_business: isBusiness,
-        ...(refCode && refCode !== userId ? { referred_by: refCode } : {}),
+        ref_code: existingMember?.ref_code ?? generateRefCode(),
+        ...(referredById ? { referred_by: referredById } : {}),
       });
 
       const { data: catRows } = await supabase

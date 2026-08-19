@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { mockCategories, mockRegions, categoryIcons, categoryColors } from "@/lib/mockData";
 import { formatPrice } from "@/lib/format";
+import { generateRefCode } from "@/lib/refCode";
 
 type InterestItem = {
   id: string;
@@ -25,7 +26,7 @@ type ReferralItem = {
 export default function MyPage() {
   const [loading, setLoading] = useState(true);
   const [phone, setPhone] = useState("");
-  const [myId, setMyId] = useState("");
+  const [refCode, setRefCode] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
   const [regions, setRegions] = useState<string[]>([]);
   const [interests, setInterests] = useState<InterestItem[]>([]);
@@ -49,14 +50,25 @@ export default function MyPage() {
         return;
       }
       const userId = userData.user.id;
-      setMyId(userId);
 
       const { data: member } = await supabase
         .from("members")
-        .select("phone")
+        .select("phone, ref_code")
         .eq("id", userId)
         .single();
       if (member) setPhone(member.phone);
+
+      if (member?.ref_code) {
+        setRefCode(member.ref_code);
+      } else {
+        // 이 기능이 생기기 전에 가입한 회원 — 지금 처음 코드를 발급해줌
+        const newCode = generateRefCode();
+        const { error: codeError } = await supabase
+          .from("members")
+          .update({ ref_code: newCode })
+          .eq("id", userId);
+        if (!codeError) setRefCode(newCode);
+      }
 
       const { data: catRows } = await supabase
         .from("member_categories")
@@ -322,11 +334,11 @@ export default function MyPage() {
           </p>
           <div className="flex gap-2">
             <div className="flex-1 min-w-0 border-2 border-gray200 rounded-xl px-3.5 flex items-center text-sm text-gray500 truncate" style={{ height: "48px" }}>
-              {typeof window !== "undefined" ? `${window.location.origin}/signup?ref=${myId}` : ""}
+              {typeof window !== "undefined" && refCode ? `${window.location.origin}/signup?ref=${refCode}` : ""}
             </div>
             <button
               onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/signup?ref=${myId}`);
+                navigator.clipboard.writeText(`${window.location.origin}/signup?ref=${refCode}`);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               }}

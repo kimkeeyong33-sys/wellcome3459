@@ -209,6 +209,9 @@ create policy "buy_requests_public_insert" on public.buy_requests
 -- 점핑파트너(추천인) 기능 — 누가 누구를 추천해서 가입했는지 추적 (리워드 없는 트래킹 전용)
 alter table public.members add column if not exists referred_by uuid references public.members(id);
 
+-- 추천 링크에 UUID 대신 쓸 짧은 코드 (예: "7F3KQ9"). 공유하기 좋게 회원마다 하나씩 부여됩니다.
+alter table public.members add column if not exists ref_code text unique;
+
 -- ---------------- Storage (매물 사진 저장용) ----------------
 -- 아래는 SQL Editor가 아니라 Supabase 대시보드 → Storage 메뉴에서 수동으로 설정하세요:
 -- 1. "New bucket" → 이름: deal-images, Public bucket 체크 (누구나 읽기 가능하게)
