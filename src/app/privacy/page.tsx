@@ -92,7 +92,7 @@ export default function PrivacyPage() {
 
         <div>
           <h2 className="font-bold text-navy mb-1.5">8. 문의처</h2>
-          <p>점핑익스체인지 주식회사 (덤핑점핑)</p>
+          <p>점프엑스 주식회사 (덤핑점핑)</p>
           <p>개인정보 관련 문의: 서비스 내 점핑매니저 채널을 통해 접수해 주세요.</p>
         </div>
       </section>

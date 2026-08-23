@@ -79,7 +79,7 @@ export default function BuyPage() {
           <Link href="/" className="bg-white rounded-lg px-3.5 py-2.5 inline-block">
             <img src="/images/logo.png" alt="덤핑점핑" className="h-8 w-auto" />
           </Link>
-          <span className="text-white/70 text-sm tracking-wide">Powered by JumpingBid</span>
+          <span className="text-white/70 text-sm tracking-wide">Powered by JumpX</span>
         </div>
         <div className="text-xs font-bold tracking-widest" style={{ color: "#8FB4DB" }}>
           구매 희망 등록

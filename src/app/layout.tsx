@@ -3,7 +3,7 @@ import "./globals.css";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://dumpingjumping.vercel.app";
 const DEFAULT_DESCRIPTION =
-  "전국 B2B 덤핑 재고·이월상품·반품 특가 정보를 관심 카테고리와 지역만 등록하면 가장 먼저 알려드립니다. Powered by JumpingBid.";
+  "전국 B2B 덤핑 재고·이월상품·반품 특가 정보를 관심 카테고리와 지역만 등록하면 가장 먼저 알려드립니다. Powered by JumpX.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),

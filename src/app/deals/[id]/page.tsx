@@ -159,7 +159,7 @@ function DealDetailPageInner() {
             <Link href="/" className="bg-white rounded-lg px-3.5 py-2.5 inline-block flex-shrink-0">
               <img src="/images/logo.png" alt="덤핑점핑" className="h-8 w-auto" />
             </Link>
-            <span className="text-white/70 text-sm tracking-wide truncate">Powered by JumpingBid</span>
+            <span className="text-white/70 text-sm tracking-wide truncate">Powered by JumpX</span>
           </div>
           {remainPct <= 30 && (
             <div

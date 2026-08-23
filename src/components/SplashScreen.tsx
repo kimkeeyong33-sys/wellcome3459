@@ -36,7 +36,7 @@ export default function SplashScreen({ children }: { children: React.ReactNode }
             <img src="/images/logo.png" alt="덤핑점핑" className="w-40 h-auto" />
           </div>
 
-          <p className="text-white/80 text-lg font-bold tracking-wide mb-8">Powered by JumpingBid</p>
+          <p className="text-white/80 text-lg font-bold tracking-wide mb-8">Powered by JumpX</p>
 
           <div
             className="w-8 h-8 rounded-full animate-spin"

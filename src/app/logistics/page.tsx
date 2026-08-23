@@ -81,7 +81,7 @@ export default function LogisticsPage() {
           <Link href="/" className="bg-white rounded-lg px-3.5 py-2.5 inline-block">
             <img src="/images/logo.png" alt="덤핑점핑" className="h-8 w-auto" />
           </Link>
-          <span className="text-white/70 text-sm tracking-wide">Powered by JumpingBid</span>
+          <span className="text-white/70 text-sm tracking-wide">Powered by JumpX</span>
         </div>
         <div className="text-xs font-bold tracking-widest" style={{ color: TEAL_LIGHT }}>
           전국 물류 네트워크
@@ -619,7 +619,7 @@ function ShippingMatchTeaser() {
           운송사 매칭 · 견적 비교
         </div>
         <p className="text-white/70 text-sm mt-2.5 leading-relaxed">
-          점핑비드 매물을 낙찰받은 다음, 지역·화물량에 맞는 운송사를 자동으로 매칭하고
+          점프엑스 매물을 낙찰받은 다음, 지역·화물량에 맞는 운송사를 자동으로 매칭하고
           견적을 비교하는 기능을 준비하고 있어요.
         </p>
       </div>
@@ -642,7 +642,7 @@ function ShippingMatchTeaser() {
       </div>
 
       <p className="text-[11px] text-gray500 leading-relaxed">
-        ※ 카고링크는 점핑익스체인지와 제휴 관계가 아닌 외부 서비스이며, 이용 시 해당 플랫폼의
+        ※ 카고링크는 점프엑스와 제휴 관계가 아닌 외부 서비스이며, 이용 시 해당 플랫폼의
         약관이 적용됩니다.
       </p>
     </div>

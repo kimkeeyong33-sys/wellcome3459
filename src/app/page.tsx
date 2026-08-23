@@ -78,7 +78,7 @@ export default function Home() {
             <img src="/images/logo.png" alt="덤핑점핑" className="h-10 w-auto" />
           </div>
           <span className="text-white/70 text-sm tracking-wide self-end mb-1">
-            Powered by JumpingBid
+            Powered by JumpX
           </span>
         </div>
 

@@ -1,4 +1,4 @@
-# 덤핑점핑 (JumpingBid 알림 MVP)
+# 덤핑점핑 (JumpX 알림 MVP)
 
 회원가입 → 알림 리스트 → 매물 상세, 판매자 신청 → 관리자 승인까지 이어지는
 B2B 덤핑정보 알림 웹앱입니다. Next.js(App Router) + Supabase + Tailwind CSS로 만들었습니다.
