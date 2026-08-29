@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>너또 — 로또는 너또, 이번 주 나의 행운번호</title>
+<!-- 카카오 SDK 스크립트 (실제 사용 시 발급받은 JS 키 적용). integrity 해시는 발급받은 SDK 버전에 맞는 정확한 값으로 교체하세요. -->
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap');
+
+  :root{
+    --bg: #FFFCF7;
+    --ink: #221F2B;
+    --ink-mid: #5C5568;
+    --ink-soft: #8A8593;
+    --ink-faint: #B7B0C4;
+    --card: #F6F1FC;
+    --card-line: #ECE4FA;
+    --accent: #7C5CFC;
+    --accent-soft: #EFE9FF;
+
+    --r-lg: 22px;
+    --r-md: 16px;
+    --r-sm: 12px;
+    --r-pill: 100px;
+
+    --fs-display: 27px;
+    --fs-title: 20px;
+    --fs-subtitle: 16px;
+    --fs-body: 15px;
+    --fs-caption: 13px;
+    --fs-micro: 12px;
+
+    --sp-xs: 6px;
+    --sp-sm: 10px;
+    --sp-md: 16px;
+    --sp-lg: 24px;
+    --sp-xl: 32px;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{
+    height:100%;
+    overflow:hidden;
+  }
+  body{
+    font-family:'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    font-size:var(--fs-body);
+    line-height:1.6;
+  }
+
+  .screen{
+    max-width:480px;
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    height:100vh;
+    height:100dvh;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-y:contain;
+  }
+
+  .view{ display:none; flex:1; flex-direction:column; }
+  .view.active{ display:flex; min-height:100%; }
+
+  .icon-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    background:#fff;
+    border-radius:50%;
+  }
+
+  .btn-primary{
+    width:100%;
+    padding:18px 0;
+    border:none; border-radius:var(--r-md);
+    background:linear-gradient(135deg, #7C5CFC 0%, #A78BFA 100%);
+    color:#fff;
+    font-size:var(--fs-subtitle);
+    font-weight:700;
+    font-family:inherit;
+    cursor:pointer;
+    box-shadow:0 8px 20px rgba(124,92,252,0.26);
+  }
+  .btn-primary:active{ transform:scale(0.985); }
+
+  .btn-unlock{
+    width:100%;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:18px 0;
+    border:none; border-radius:var(--r-md);
+    background:#FEE500; color:#191600;
+    font-size:var(--fs-subtitle);
+    font-weight:800;
+    font-family:inherit;
+    cursor:pointer;
+  }
+
+  .cta-fixed{
+    position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:480px;
+    background:linear-gradient(to top, var(--bg) 85%, rgba(255,252,247,0));
+    padding:var(--sp-md) var(--sp-lg) var(--sp-lg);
+  }
+
+  .page-pad{ padding-bottom:104px; }
+
+  /* STEP 1: 랜딩 */
+  .landing{
+    flex:1; display:flex; flex-direction:column;
+    padding:0 0 var(--sp-xl); position:relative; overflow:hidden;
+  }
+  .hero-wrap{
+    width:100%; aspect-ratio:16/9; overflow:hidden;
+    background:linear-gradient(160deg,#EAF6FF 0%,#F7FBFF 100%);
+  }
+  .hero-svg{ width:100%; height:100%; display:block; }
+  .landing-content{ padding:var(--sp-lg) var(--sp-lg) 104px; }
+  .zodiac-chip{
+    display:inline-flex; align-items:center; gap:6px;
+    background:#fff; border:1.5px solid var(--card-line);
+    border-radius:var(--r-pill); padding:7px 14px 7px 8px;
+    font-size:var(--fs-caption); font-weight:700; color:var(--ink);
+    margin-bottom:var(--sp-md); box-shadow:0 4px 14px rgba(124,92,252,0.08);
+  }
+  .eyebrow{ font-size:var(--fs-caption); font-weight:700; color:var(--accent); margin-bottom:var(--sp-sm); }
+  .headline{ font-weight:800; font-size:var(--fs-display); line-height:1.4; color:var(--ink); margin-bottom:var(--sp-sm); max-width:280px; }
+  .sub{ font-size:var(--fs-body); color:var(--ink-mid); line-height:1.6; margin-bottom:var(--sp-lg); max-width:300px; }
+  .social-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--accent-soft); color:var(--accent);
+    font-size:var(--fs-caption); font-weight:700;
+    padding:8px 14px; border-radius:var(--r-pill); margin-bottom:var(--sp-xl);
+  }
+  .popular-preview{
+    width:100%; max-width:320px; background:var(--card);
+    border:1px solid var(--card-line); border-radius:var(--r-lg);
+    padding:var(--sp-md) var(--sp-lg); margin-top:var(--sp-sm); text-align:center;
+  }
+  .popular-preview-label{
+    font-size:var(--fs-caption); font-weight:700; color:var(--ink-mid);
+    display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:var(--sp-sm);
+  }
+  .popular-preview-balls{ display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
+  .mini-preview-ball{
+    width:32px; height:32px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:12px; font-weight:800; box-shadow:0 2px 6px rgba(0,0,0,0.14);
+  }
+  .popular-preview-note{ font-size:var(--fs-micro); color:var(--ink-soft); }
+
+  /* STEP 2: 입력 */
+  .input-view{ padding:var(--sp-lg) var(--sp-lg) 0; }
+  .top-nav{ height:40px; display:flex; align-items:center; margin-bottom:var(--sp-sm); }
+  .back-btn{
+    width:36px; height:36px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:none; border:none; cursor:pointer;
+  }
+  .step-title{ font-size:var(--fs-title); font-weight:800; margin-bottom:var(--sp-xs); }
+  .step-desc{ font-size:var(--fs-caption); color:var(--ink-soft); margin-bottom:var(--sp-xl); line-height:1.5; }
+
+  .field-group{ margin-bottom:var(--sp-lg); }
+  .field-label{ font-size:var(--fs-caption); font-weight:700; color:var(--ink-soft); margin-bottom:var(--sp-sm); display:block; }
+  .pill-row{ display:flex; gap:8px; }
+  .pill{
+    flex:1; text-align:center; padding:13px 0; border-radius:var(--r-sm);
+    background:var(--card); font-size:var(--fs-caption); font-weight:700; color:var(--ink-soft);
+    border:1.5px solid transparent; cursor:pointer; user-select:none;
+  }
+  .pill.selected{ background:var(--accent-soft); color:var(--accent); border-color:var(--accent); }
+
+  .date-input{
+    width:100%; background:var(--card); border:1.5px solid transparent;
+    border-radius:var(--r-sm); padding:16px 14px;
+    font-size:18px; font-weight:700; color:var(--ink);
+    font-family:inherit; outline:none; letter-spacing:0.02em;
+  }
+  .date-input:focus{ border-color:var(--accent); background:#fff; }
+  .date-input::placeholder{ color:var(--ink-faint); font-weight:600; }
+  .date-input:disabled{ background:#EDEAE3; color:var(--ink-faint); cursor:not-allowed; }
+
+  .hint-caption{ font-size:11px; color:var(--ink-faint); font-weight:500; margin-bottom:var(--sp-xs); }
+  .zodiac-preview{ margin-top:var(--sp-sm); font-size:var(--fs-caption); font-weight:700; color:var(--accent); min-height:18px; }
+
+  .time-row{ display:flex; gap:8px; margin-top:var(--sp-sm); }
+  .time-row .date-input{ text-align:center; font-size:16px; }
+
+  .checkbox-row{
+    display:flex; align-items:center; gap:8px;
+    font-size:var(--fs-caption); font-weight:600; color:var(--ink-soft);
+    cursor:pointer; width:fit-content;
+  }
+  .checkbox-row input{ width:16px; height:16px; accent-color:var(--accent); }
+
+  /* STEP 3: 로딩 */
+  .loading-view{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:var(--sp-lg);
+  }
+  .loading-ring{
+    width:56px; height:56px; border-radius:50%;
+    border:4px solid var(--card-line); border-top-color:var(--accent);
+    animation:spin 0.9s linear infinite; margin-bottom:var(--sp-lg);
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .loading-text{ font-size:var(--fs-body); font-weight:700; color:var(--ink); transition:opacity 0.25s; }
+
+  /* STEP 4: 결과 */
+  .result-view{ padding:var(--sp-lg) var(--sp-md) 0; }
+  .result-header{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:var(--sp-md); padding:0 var(--sp-xs); }
+  .result-title{ font-size:var(--fs-title); font-weight:800; display:flex; align-items:center; gap:6px; }
+  .result-date{ font-size:var(--fs-micro); color:var(--ink-soft); font-weight:600; }
+
+  .card{ background:var(--card); border-radius:var(--r-lg); padding:var(--sp-lg) var(--sp-md); margin-bottom:var(--sp-sm); }
+
+  .oheang-card{ display:flex; align-items:center; gap:var(--sp-md); }
+  .donut-wrap{ position:relative; width:88px; height:88px; flex-shrink:0; }
+  .donut-wrap svg{ transform:rotate(-90deg); }
+  .donut-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .donut-center .glyph{ font-size:19px; font-weight:800; color:var(--accent); line-height:1; }
+  .donut-center .glyph-label{ font-size:var(--fs-micro); color:var(--ink-soft); font-weight:700; margin-top:2px; }
+
+  .oheang-text{ flex:1; min-width:0; }
+  .oheang-badge{
+    display:inline-block; font-size:var(--fs-micro); font-weight:800;
+    color:var(--accent); background:var(--accent-soft); padding:4px 10px;
+    border-radius:var(--r-pill); margin-bottom:var(--sp-xs);
+  }
+  .oheang-msg{ font-size:var(--fs-caption); line-height:1.55; color:var(--ink); font-weight:500; }
+
+  .numbers-card{ text-align:center; }
+  .numbers-eyebrow{
+    font-size:var(--fs-caption); color:var(--ink-soft); font-weight:700;
+    margin-bottom:var(--sp-md); display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .balls{ display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-bottom:var(--sp-xs); }
+  .ball{
+    width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    position:relative; opacity:0; transform:scale(0.4);
+    animation:pop 0.4s cubic-bezier(.34,1.56,.64,1) forwards;
+    box-shadow: inset -2px -3px 5px rgba(0,0,0,0.18), inset 2px 3px 4px rgba(255,255,255,0.45), 0 4px 10px rgba(0,0,0,0.12);
+  }
+  .ball::before{
+    content:''; position:absolute; top:14%; left:20%; width:24%; height:18%;
+    background:rgba(255,255,255,0.7); border-radius:50%; filter:blur(1.5px); pointer-events:none;
+  }
+  .ball-num{
+    width:62%; height:62%; border-radius:50%; background:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px; font-weight:800; color:#222; box-shadow: inset 0 1px 3px rgba(0,0,0,0.18);
+  }
+  .ball.bonus{ background:linear-gradient(150deg,#ffffff,#dcdce2) !important; }
+  .ball-plus{
+    display:flex; align-items:center; justify-content:center; width:20px; height:46px;
+    font-size:18px; font-weight:800; color:var(--ink-faint);
+    opacity:0; animation:pop 0.4s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  @keyframes pop{ to{ opacity:1; transform:scale(1); } }
+  .balls-caption{ font-size:var(--fs-micro); color:var(--ink-soft); }
+  .numbers-explain{
+    font-size:var(--fs-caption); color:var(--ink); font-weight:500; line-height:1.55;
+    margin-top:var(--sp-md); padding-top:var(--sp-md); border-top:1px solid var(--card-line);
+  }
+  .numbers-explain b{ color:var(--accent); font-weight:800; }
+
+  .lucky-point-line{ font-size:var(--fs-caption); color:var(--ink-mid); font-weight:500; margin-top:var(--sp-sm); text-align:center; }
+  .lucky-point-line b{ color:var(--accent); font-weight:800; font-size:15px; }
+
+  .revisit-bar{ padding:var(--sp-md) var(--sp-lg) calc(var(--sp-lg) + env(safe-area-inset-bottom, 0px) + 8px); text-align:center; }
+  .revisit-links{ display:flex; align-items:center; justify-content:center; gap:8px; margin-top:var(--sp-sm); }
+  .revisit-link{ font-size:var(--fs-caption); color:var(--ink-soft); font-weight:600; cursor:pointer; }
+  .revisit-link-divider{ color:var(--ink-faint); font-size:var(--fs-caption); }
+
+  .lottoman-card{
+    background:linear-gradient(135deg, #FFF4DA 0%, #FFE3E0 100%);
+    border:1px solid #FFE0B8; border-radius:var(--r-lg);
+    padding:var(--sp-lg) var(--sp-md); margin-bottom:var(--sp-sm);
+  }
+  .lottoman-header{ display:flex; align-items:center; gap:var(--sp-sm); margin-bottom:var(--sp-md); }
+  .lottoman-icon{ width:38px; height:38px; font-size:19px; box-shadow:0 4px 10px rgba(255,150,60,0.18); flex-shrink:0; }
+  .lottoman-title{ font-size:var(--fs-caption); font-weight:800; color:#8A4B00; }
+  .lottoman-sub{ font-size:var(--fs-micro); color:#B07A2E; font-weight:600; margin-top:1px; }
+
+  .ad-slot{
+    background:#F2F2F5; border:1px dashed #D8D8DE; border-radius:var(--r-md);
+    padding:var(--sp-md); margin-bottom:var(--sp-sm);
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .ad-tag{ font-size:10px; font-weight:800; color:#9A9AA5; background:#E4E4EA; padding:2px 6px; border-radius:4px; }
+  .ad-text{ font-size:var(--fs-caption); color:#9A9AA5; font-weight:600; }
+
+  .locked-card{
+    border-radius:24px; background:linear-gradient(160deg, #7C5CFC 0%, #A78BFA 55%, #FF8FC4 100%);
+    box-shadow:0 12px 28px rgba(124,92,252,0.26); padding:var(--sp-xl) var(--sp-lg);
+    margin-bottom:var(--sp-sm); text-align:center;
+  }
+  .locked-title{ font-size:var(--fs-subtitle); font-weight:800; color:#fff; margin-bottom:var(--sp-xs); display:flex; align-items:center; justify-content:center; gap:6px; }
+  .locked-desc{ font-size:var(--fs-caption); color:rgba(255,255,255,0.88); margin-bottom:var(--sp-md); font-weight:500; }
+  .locked-perks{ display:flex; flex-direction:column; gap:6px; margin-bottom:var(--sp-lg); }
+  .locked-perk{ font-size:var(--fs-caption); color:rgba(255,255,255,0.9); font-weight:600; }
+
+  .note-card{ font-size:var(--fs-micro); color:var(--ink-soft); line-height:1.6; border:1px dashed var(--card-line); text-align:center; background:transparent; }
+
+  /* STEP 5: 상세 운세 */
+  .fortune-view{ padding:var(--sp-sm) var(--sp-md) var(--sp-lg); }
+  .fortune-header{ text-align:center; padding:var(--sp-sm) 0 var(--sp-lg); }
+  .fortune-welcome{ display:inline-flex; align-items:center; gap:6px; font-size:var(--fs-subtitle); font-weight:800; color:var(--accent); margin-bottom:var(--sp-xs); }
+  .fortune-title{ font-size:var(--fs-title); font-weight:800; margin-bottom:4px; }
+  .fortune-date{ font-size:var(--fs-caption); color:var(--ink-soft); font-weight:600; margin-bottom:var(--sp-sm); }
+  .fortune-hint{ font-size:var(--fs-micro); color:var(--ink-soft); }
+
+  .fortune-card-title{ font-size:var(--fs-body); font-weight:800; color:var(--ink); display:flex; align-items:center; gap:6px; margin-bottom:var(--sp-sm); }
+  .fortune-card-desc{ font-size:var(--fs-caption); color:var(--ink-mid); line-height:1.6; }
+
+  .fortune-stars{ font-size:22px; letter-spacing:2px; color:var(--accent); margin-bottom:2px; }
+  .fortune-stars-desc{ font-size:var(--fs-body); font-weight:800; color:var(--ink); margin-bottom:var(--sp-sm); }
+
+  .fortune-split{ display:flex; gap:var(--sp-sm); margin-bottom:var(--sp-xs); }
+  .fortune-split-item{ flex:1; background:var(--card); border-radius:var(--r-lg); padding:var(--sp-md); text-align:center; }
+  .fortune-split-label{ font-size:var(--fs-caption); font-weight:700; color:var(--ink-soft); margin-bottom:6px; }
+  .fortune-split-value{ font-size:20px; font-weight:900; color:var(--accent); }
+  .fortune-caution{ font-size:var(--fs-micro); color:var(--ink-soft); text-align:center; margin:var(--sp-sm) 0 var(--sp-md); }
+
+  .compat-teaser{ background:linear-gradient(135deg,#FFF6DC,#FFFCF7); }
+  .btn-compat{
+    width:100%; margin-top:var(--sp-sm); padding:14px 0; border:none; border-radius:var(--r-md);
+    background:#FFD34D; color:#4A3600; font-size:var(--fs-body); font-weight:800; font-family:inherit; cursor:pointer;
+  }
+
+  .fortune-notice{ font-size:var(--fs-micro); color:var(--ink-soft); text-align:center; line-height:1.6; margin:var(--sp-md) 0; }
+
+  /* STEP 6/7: 궁합번호 */
+  .compat-header{ text-align:center; margin-bottom:var(--sp-lg); }
+  .compat-title{ font-size:var(--fs-title); font-weight:800; }
+  .compat-sub{ font-size:var(--fs-caption); color:var(--ink-soft); margin-top:4px; }
+
+  .compat-pill-row{ display:flex; gap:8px; margin-bottom:var(--sp-lg); }
+  .compat-pill{
+    flex:1; text-align:center; padding:13px 0; border-radius:var(--r-sm);
+    background:var(--card); font-size:var(--fs-caption); font-weight:700; color:var(--ink-soft);
+    border:1.5px solid transparent; cursor:pointer; user-select:none; font-family:inherit;
+  }
+  .compat-pill.selected{ background:var(--accent-soft); color:var(--accent); border-color:var(--accent); }
+
+  .compat-date-row{ display:flex; gap:8px; }
+  .compat-date-input{ text-align:center; }
+
+  .btn-compat-primary{
+    width:100%; padding:18px 0; border:none; border-radius:var(--r-md);
+    background:linear-gradient(135deg, #FFD34D 0%, #FFB300 100%);
+    color:#4A3600; font-size:var(--fs-subtitle); font-weight:800; font-family:inherit;
+    cursor:pointer; box-shadow:0 8px 20px rgba(255,179,0,0.28);
+  }
+
+  .btn-kakao-share{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:16px 0; border:none; border-radius:var(--r-md);
+    background:#FEE500; color:#191600; font-size:var(--fs-body); font-weight:800;
+    font-family:inherit; cursor:pointer; margin-top:var(--sp-md);
+  }
+
+  /* STEP 8: 알림 신청 */
+  .subscribe-view{ display:flex; flex-direction:column; padding:var(--sp-sm) var(--sp-lg) var(--sp-lg); min-height:100%; }
+  .subscribe-center{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding-bottom:var(--sp-xl);
+  }
+  .subscribe-emoji{ font-size:56px; margin-bottom:var(--sp-md); }
+  .subscribe-title{ font-size:var(--fs-title); font-weight:800; color:var(--ink); margin-bottom:var(--sp-sm); line-height:1.4; }
+  .subscribe-desc{ font-size:var(--fs-caption); color:var(--ink-soft); line-height:1.6; margin-bottom:var(--sp-xl); max-width:280px; }
+  #subscribe-before, #subscribe-after{ width:100%; max-width:320px; }
+  .subscribe-done{ font-size:var(--fs-subtitle); font-weight:800; color:var(--accent); margin-bottom:var(--sp-md); }
+</style>
+</head>
+<body>
+
+<div class="screen">
+
+  <!-- STEP 1: 랜딩 -->
+  <div class="view active" id="view-landing">
+    <div class="landing">
+      <div class="hero-wrap">
+        <svg class="hero-svg" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="너또 행운번호 로또볼 일러스트">
+          <defs>
+            <radialGradient id="g-yellow" cx="35%" cy="30%" r="75%">
+              <stop offset="0%" stop-color="#FFE082"/><stop offset="45%" stop-color="#FFB300"/><stop offset="100%" stop-color="#C98A00"/>
+            </radialGradient>
+            <radialGradient id="g-blue" cx="35%" cy="30%" r="75%">
+              <stop offset="0%" stop-color="#81D4FA"/><stop offset="45%" stop-color="#29B6F6"/><stop offset="100%" stop-color="#0288D1"/>
+            </radialGradient>
+            <radialGradient id="g-red" cx="35%" cy="30%" r="75%">
+              <stop offset="0%" stop-color="#FF8A80"/><stop offset="45%" stop-color="#EF5350"/><stop offset="100%" stop-color="#C62828"/>
+            </radialGradient>
+            <radialGradient id="g-gray" cx="35%" cy="30%" r="75%">
+              <stop offset="0%" stop-color="#D1D1D6"/><stop offset="45%" stop-color="#8E8E93"/><stop offset="100%" stop-color="#636366"/>
+            </radialGradient>
+            <radialGradient id="g-green" cx="35%" cy="30%" r="75%">
+              <stop offset="0%" stop-color="#A5D6A7"/><stop offset="45%" stop-color="#66BB6A"/><stop offset="100%" stop-color="#2E7D32"/>
+            </radialGradient>
+            <filter id="soft-blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.6"/></filter>
+            <filter id="ball-shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity="0.18"/></filter>
+          </defs>
+          <g filter="url(#ball-shadow)">
+            <circle cx="110" cy="70" r="38" fill="url(#g-yellow)"/>
+            <ellipse cx="97.8" cy="55.6" rx="12.9" ry="8.4" fill="#ffffff" opacity="0.55" filter="url(#soft-blur)"/>
+            <circle cx="110" cy="70" r="23.6" fill="#ffffff"/>
+            <text x="110" y="70" text-anchor="middle" dominant-baseline="central" font-family="Pretendard, sans-serif" font-weight="800" font-size="23.6" fill="#222222">6</text>
+          </g>
+          <g filter="url(#ball-shadow)">
+            <circle cx="262" cy="45" r="34" fill="url(#g-blue)"/>
+            <ellipse cx="251.1" cy="32.1" rx="11.6" ry="7.5" fill="#ffffff" opacity="0.55" filter="url(#soft-blur)"/>
+            <circle cx="262" cy="45" r="21.1" fill="#ffffff"/>
+            <text x="262" y="45" text-anchor="middle" dominant-baseline="central" font-family="Pretendard, sans-serif" font-weight="800" font-size="21.1" fill="#222222">17</text>
+          </g>
+          <g filter="url(#ball-shadow)">
+            <circle cx="432" cy="92" r="42" fill="url(#g-red)"/>
+            <ellipse cx="418.6" cy="76.0" rx="14.3" ry="9.2" fill="#ffffff" opacity="0.55" filter="url(#soft-blur)"/>
+            <circle cx="432" cy="92" r="26.0" fill="#ffffff"/>
+            <text x="432" y="92" text-anchor="middle" dominant-baseline="central" font-family="Pretendard, sans-serif" font-weight="800" font-size="26.0" fill="#222222">24</text>
+          </g>
+          <g filter="url(#ball-shadow)">
+            <circle cx="562" cy="190" r="30" fill="url(#g-gray)"/>
+            <ellipse cx="552.4" cy="178.6" rx="10.2" ry="6.6" fill="#ffffff" opacity="0.55" filter="url(#soft-blur)"/>
+            <circle cx="562" cy="190" r="18.6" fill="#ffffff"/>
+            <text x="562" y="190" text-anchor="middle" dominant-baseline="central" font-family="Pretendard, sans-serif" font-weight="800" font-size="18.6" fill="#222222">36</text>
+          </g>
+          <g filter="url(#ball-shadow)">
+            <circle cx="70" cy="192" r="44" fill="url(#g-yellow)"/>
+            <ellipse cx="55.9" cy="175.3" rx="15.0" ry="9.7" fill="#ffffff" opacity="0.55" filter="url(#soft-blur)"/>
+            <circle cx="70" cy="192" r="27.3" fill="#ffffff"/>
+            <text x="70" y="192" text-anchor="middle" dominant-baseline="central" font-family="Pretendard, sans-serif" font-weight="800" font-size="27.3" fill="#222222">8</text>
+          </g>
+          <g filter="url(#ball-shadow)">
+            <circle cx="302" cy="200" r="48" fill="url(#g-green)"/>
+            <ellipse cx="286.6" cy="181.8" rx="16.3" ry="10.6" fill="#ffffff" opacity="0.55" filter="url(#soft-blur)"/>
+            <circle cx="302" cy="200" r="29.8" fill="#ffffff"/>
+            <text x="302" y="200" text-anchor="middle" dominant-baseline="central" font-family="Pretendard, sans-serif" font-weight="800" font-size="29.8" fill="#222222">45</text>
+          </g>
+          <g filter="url(#ball-shadow)">
+            <circle cx="152" cy="348" r="58" fill="url(#g-blue)"/>
+            <ellipse cx="133.4" cy="326.0" rx="19.7" ry="12.8" fill="#ffffff" opacity="0.55" filter="url(#soft-blur)"/>
+            <circle cx="152" cy="348" r="36.0" fill="#ffffff"/>
+            <text x="152" y="348" text-anchor="middle" dominant-baseline="central" font-family="Pretendard, sans-serif" font-weight="800" font-size="36.0" fill="#222222">14</text>
+          </g>
+          <g filter="url(#ball-shadow)">
+            <circle cx="342" cy="332" r="72" fill="url(#g-red)"/>
+            <ellipse cx="319.0" cy="304.6" rx="24.5" ry="15.8" fill="#ffffff" opacity="0.55" filter="url(#soft-blur)"/>
+            <circle cx="342" cy="332" r="44.6" fill="#ffffff"/>
+            <text x="342" y="332" text-anchor="middle" dominant-baseline="central" font-family="Pretendard, sans-serif" font-weight="800" font-size="44.6" fill="#222222">27</text>
+          </g>
+        </svg>
+      </div>
+      <div class="landing-content">
+        <div class="zodiac-chip"><span class="emoji">💰</span>로또는 '너또' — 돈벼락 예약 완료</div>
+        <div class="eyebrow">너또 · Weekly</div>
+        <div class="headline">이번 주, 나의<br>행운 번호는?</div>
+        <div class="sub">생년월일과 태어난 해의 띠로 이번 주에<br>어울리는 번호 6개를 알려드려요.</div>
+        <div class="social-badge"><span class="emoji">🎉</span>124,802명이 이번 주 행운번호를 뽑았어요</div>
+        <div class="popular-preview">
+          <div class="popular-preview-label"><span class="emoji">🎱</span>이번 주 인기 행운번호</div>
+          <div class="popular-preview-balls" id="popular-preview-balls"></div>
+          <div class="popular-preview-note">당신에게 맞는 번호는 다를 수 있어요</div>
+        </div>
+      </div>
+    </div>
+    <div class="cta-fixed">
+      <button class="btn-primary" onclick="goTo('view-input')">내 행운번호 확인하기</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: 입력 -->
+  <div class="view" id="view-input">
+    <div class="input-view page-pad">
+      <div class="top-nav">
+        <button class="back-btn" onclick="goTo('view-landing')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#221F2B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="step-title">언제 태어나셨어요?</div>
+      <div class="step-desc">입력하신 정보는 이번 계산에만 사용되고 저장되지 않아요.</div>
+
+      <div class="field-group">
+        <label class="field-label">양력 · 음력</label>
+        <div class="pill-row">
+          <div class="pill selected" id="pill-solar" onclick="selectCalendar('solar')">양력</div>
+          <div class="pill" id="pill-lunar" onclick="selectCalendar('lunar')">음력</div>
+        </div>
+        <div class="hint-caption" style="margin-top:8px;">음력을 선택하면 입력한 날짜를 실제 태어난 음력 생년월일로 계산해요.</div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">생년월일 8자리</label>
+        <input class="date-input" id="input-birth" type="tel" inputmode="numeric" maxlength="10" placeholder="예: 19940815" oninput="formatBirthInput(this); previewZodiac();" onfocus="scrollInputIntoView(this)">
+        <div class="zodiac-preview" id="zodiac-preview"></div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">태어난 시간</label>
+        <div class="hint-caption">사주 넷째 기둥(시주) 계산에 쓰여요. 분은 필요 없어요.</div>
+        <label class="checkbox-row" style="margin:var(--sp-xs) 0 var(--sp-sm);">
+          <input type="checkbox" id="check-unknown" onchange="toggleTime()">
+          태어난 시간을 몰라요
+        </label>
+        <div class="time-row">
+          <input class="date-input" id="input-hour" type="tel" inputmode="numeric" maxlength="2" placeholder="예: 14 (오후 2시)" oninput="digitsOnly(this,2)" onblur="clampHour(this)" onfocus="scrollInputIntoView(this)">
+        </div>
+      </div>
+    </div>
+    <div class="cta-fixed">
+      <button class="btn-primary" onclick="startLoading()">오행 번호 확인하기</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: 로딩 -->
+  <div class="view" id="view-loading">
+    <div class="loading-view">
+      <div class="loading-ring"></div>
+      <div class="loading-text" id="loading-text">사주팔자 계산 중...</div>
+    </div>
+  </div>
+
+  <!-- STEP 4: 결과 -->
+  <div class="view" id="view-result">
+    <div class="result-view page-pad">
+      <div class="result-header">
+        <div class="result-title"><span class="emoji" id="result-emoji">🐯</span><span id="result-title-text">이번 주 오행 로또</span></div>
+        <div class="result-date" id="result-date">8월 4주차</div>
+      </div>
+
+      <div class="card oheang-card">
+        <div class="donut-wrap">
+          <svg width="88" height="88" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="37" fill="none" stroke="#E9EAEE" stroke-width="10"/>
+            <circle id="donut-arc" cx="44" cy="44" r="37" fill="none" stroke="var(--accent)" stroke-width="10"
+                    stroke-linecap="round" stroke-dasharray="232.5" stroke-dashoffset="186"/>
+          </svg>
+          <div class="donut-center">
+            <div class="glyph" id="glyph">木</div>
+            <div class="glyph-label" id="glyph-label">목</div>
+          </div>
+        </div>
+        <div class="oheang-text">
+          <div class="oheang-badge" id="oheang-badge">목(木) 기운 필요</div>
+          <div class="oheang-msg" id="oheang-msg">이번 주는 목의 기운이 부족해요. 성장과 확장의 숫자로 균형을 맞춰봤어요.</div>
+        </div>
+      </div>
+
+      <div class="card numbers-card">
+        <div class="numbers-eyebrow"><span class="emoji">🔮</span>이번 주 나의 오행번호</div>
+        <div class="balls" id="balls"></div>
+        <div class="balls-caption">가장 오른쪽은 보너스 번호예요</div>
+        <div class="numbers-explain" id="numbers-explain"></div>
+        <div class="lucky-point-line">✨ 이 중 <b id="lucky-point-num">27</b>번이 이번 주 당신과 가장 강하게 연결된 숫자예요</div>
+      </div>
+
+      <div class="lottoman-card">
+        <div class="lottoman-header">
+          <div class="icon-badge lottoman-icon">🤑</div>
+          <div>
+            <div class="lottoman-title">로또맨의 횡재수 번호</div>
+            <div class="lottoman-sub">이번 주, 돈벼락 맞을 준비 되셨나요? 🤑</div>
+          </div>
+        </div>
+        <div class="balls" id="balls-lottoman"></div>
+        <div class="balls-caption">로또맨은 모두에게 같은 번호를 알려줘요 🍀</div>
+      </div>
+
+      <!-- 광고 영역 -->
+      <div class="ad-slot">
+        <span class="ad-tag">AD</span>
+        <span class="ad-text">광고 배너 영역 (Kakao AdFit / Google AdSense)</span>
+      </div>
+
+      <div class="locked-card">
+        <div class="locked-title"><span class="emoji">🔒</span>이번 주 상세 운세, 잠금 해제</div>
+        <div class="locked-desc">카카오 3초만 있으면 바로 볼 수 있어요</div>
+        <div class="locked-perks">
+          <div class="locked-perk">✓ 재물운 · 애정운 상세 풀이</div>
+          <div class="locked-perk">✓ 매주 화요일 새 번호 카톡 알림</div>
+          <div class="locked-perk">✓ 친구와 궁합 번호 뽑기</div>
+        </div>
+        <button class="btn-unlock" onclick="unlockFortune()">
+          <span class="emoji">💬</span> 카카오 3초로 시작하기
+        </button>
+      </div>
+
+      <div class="card note-card">
+        재미로 즐기는 콘텐츠예요. 실제 당첨을 보장하지 않아요.
+      </div>
+    </div>
+    <div class="revisit-bar">
+      <button class="btn-primary" onclick="goTo('view-subscribe'); renderSubscribe();">🍀 다음 주에도 행운번호 받기</button>
+      <div class="revisit-links">
+        <span class="revisit-link" onclick="shareResult()">내 결과 카카오톡 공유</span>
+        <span class="revisit-link-divider">·</span>
+        <span class="revisit-link" onclick="goTo('view-landing')">처음으로</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5: 상세 운세 -->
+  <div class="view" id="view-fortune">
+    <div class="fortune-view page-pad">
+      <div class="top-nav">
+        <button class="back-btn" onclick="goTo('view-result')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#221F2B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div class="fortune-header">
+        <div class="fortune-welcome"><span class="emoji">🎉</span>카카오 연결 완료!</div>
+        <div class="fortune-title"><span id="fortune-zodiac-emoji">🐯</span> <span id="fortune-zodiac-name">호랑이</span>띠님의 이번 주 상세운세</div>
+        <div class="fortune-date" id="fortune-date">8월 4주차</div>
+        <div class="fortune-hint">✨ 이제 매주 새로운 행운을 만나보세요.</div>
+      </div>
+
+      <div class="card fortune-card">
+        <div class="fortune-card-title"><span class="emoji">🔮</span>이번 주 총운</div>
+        <div class="fortune-stars" id="fortune-stars">★★★★☆</div>
+        <div class="fortune-stars-desc" id="fortune-stars-desc">기회가 열리는 한 주</div>
+        <div class="fortune-card-desc" id="fortune-overall-desc">목(木)의 기운이 새로운 기회와 변화를 돕는 한 주예요.</div>
+      </div>
+
+      <div class="card fortune-card">
+        <div class="fortune-card-title"><span class="emoji">💰</span>재물운</div>
+        <div class="fortune-card-desc">작은 기회가 실제 수입으로 이어질 수 있어요. 새로운 제안에는 귀를 기울여보세요.</div>
+      </div>
+
+      <div class="card fortune-card">
+        <div class="fortune-card-title"><span class="emoji">❤️</span>애정운</div>
+        <div class="fortune-card-desc">솔직한 대화가 관계를 더 가깝게 만들어줘요. 먼저 마음을 표현해보세요.</div>
+      </div>
+
+      <div class="card fortune-card">
+        <div class="fortune-card-title"><span class="emoji">🌿</span>건강운</div>
+        <div class="fortune-card-desc">이번 주는 무리한 일정을 피하고 충분한 휴식을 챙겨보세요.</div>
+      </div>
+
+      <div class="fortune-split">
+        <div class="fortune-split-item">
+          <div class="fortune-split-label">🍀 행운의 날</div>
+          <div class="fortune-split-value" id="fortune-lucky-day">목요일</div>
+        </div>
+        <div class="fortune-split-item">
+          <div class="fortune-split-label">🎱 이번 주 행운번호</div>
+          <div class="fortune-split-value" id="fortune-lucky-num">27</div>
+        </div>
+      </div>
+      <div class="fortune-caution" id="fortune-caution">⚠️ 조심할 숫자: 13</div>
+
+      <div class="card compat-teaser">
+        <div class="fortune-card-title"><span class="emoji">💛</span>친구와 궁합 보기</div>
+        <div class="fortune-card-desc">친구의 생년월일을 입력하고 이번 주 궁합번호를 확인해보세요.</div>
+        <button class="btn-compat" onclick="goTo('view-compat-input')">궁합번호 뽑기 →</button>
+      </div>
+
+      <div class="fortune-notice">🔔 매주 새로운 행운번호와 운세를 카카오톡으로 알려드려요.</div>
+
+      <div class="card note-card">
+        재미로 즐기는 콘텐츠예요. 실제 결과를 보장하지 않아요.
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6: 궁합번호 입력 -->
+  <div class="view" id="view-compat-input">
+    <div class="compat-input-view page-pad">
+      <div class="top-nav">
+        <button class="back-btn" onclick="goTo('view-fortune')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#221F2B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div class="compat-header">
+        <div class="compat-title"><span class="emoji">💛</span>궁합번호</div>
+        <div class="compat-sub">누구와 궁합을 확인해볼까요?</div>
+      </div>
+
+      <div class="compat-pill-row" id="compat-relation-row">
+        <button class="compat-pill selected" data-relation="친구" onclick="selectRelation(this)">친구</button>
+        <button class="compat-pill" data-relation="연인" onclick="selectRelation(this)">연인</button>
+        <button class="compat-pill" data-relation="가족" onclick="selectRelation(this)">가족</button>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">상대방 생년월일</label>
+        <div class="compat-date-row">
+          <input class="date-input compat-date-input" id="compat-year" type="tel" inputmode="numeric" maxlength="4" placeholder="1994" oninput="digitsOnly(this,4)" onfocus="scrollInputIntoView(this)">
+          <input class="date-input compat-date-input" id="compat-month" type="tel" inputmode="numeric" maxlength="2" placeholder="08" oninput="digitsOnly(this,2)" onfocus="scrollInputIntoView(this)">
+          <input class="date-input compat-date-input" id="compat-day" type="tel" inputmode="numeric" maxlength="2" placeholder="15" oninput="digitsOnly(this,2)" onfocus="scrollInputIntoView(this)">
+        </div>
+      </div>
+    </div>
+    <div class="cta-fixed">
+      <button class="btn-compat-primary" onclick="computeCompat()">💛 궁합번호 뽑기</button>
+    </div>
+  </div>
+
+  <!-- STEP 7: 궁합번호 결과 -->
+  <div class="view" id="view-compat-result">
+    <div class="compat-result-view page-pad">
+      <div class="top-nav">
+        <button class="back-btn" onclick="goTo('view-compat-input')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#221F2B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div class="compat-header">
+        <div class="compat-title"><span class="emoji">💛</span>두 사람의 이번 주 궁합</div>
+      </div>
+
+      <div class="card fortune-card" style="text-align:center;">
+        <div class="fortune-stars" id="compat-stars">★★★★☆</div>
+        <div class="fortune-stars-desc" id="compat-stars-desc">잘 맞는 한 주예요</div>
+      </div>
+
+      <div class="card numbers-card" style="text-align:center;">
+        <div class="numbers-eyebrow"><span class="emoji">💛</span>두 사람의 궁합번호</div>
+        <div class="balls" id="compat-balls"></div>
+        <div class="lucky-point-line">🍀 가장 강한 궁합번호는 <b id="compat-best-num">27</b>번이에요</div>
+        <div class="numbers-explain" id="compat-explain">이번 주에는 함께 선택하고 함께 움직이면 좋은 흐름이에요.</div>
+      </div>
+
+      <button class="btn-kakao-share" onclick="shareCompat()">💬 카카오톡으로 공유하기</button>
+    </div>
+  </div>
+
+  <!-- STEP 8: 다음 주 알림 신청 -->
+  <div class="view" id="view-subscribe">
+    <div class="subscribe-view page-pad">
+      <div class="top-nav">
+        <button class="back-btn" onclick="goTo('view-result')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#221F2B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div class="subscribe-center">
+        <div class="subscribe-emoji" id="subscribe-emoji">🔔</div>
+        <div class="subscribe-title" id="subscribe-title">매주 화요일, 새로운 행운을 받아보세요</div>
+        <div class="subscribe-desc" id="subscribe-desc">카카오톡으로 매주 새로운 행운번호와 운세를 보내드려요.</div>
+
+        <div id="subscribe-before">
+          <button class="btn-kakao-share" onclick="subscribeWeekly()">💬 카카오 3초로 알림 받기</button>
+        </div>
+
+        <div id="subscribe-after" style="display:none;">
+          <div class="subscribe-done">✓ 신청 완료</div>
+          <button class="btn-primary" onclick="goTo('view-result')">결과 화면으로 돌아가기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // 카카오 SDK 키 설정 (발급받은 JavaScript 키를 넣으세요)
+  const KAKAO_APP_KEY = 'YOUR_KAKAO_JAVASCRIPT_KEY';
+  if (typeof Kakao !== 'undefined' && KAKAO_APP_KEY !== 'YOUR_KAKAO_JAVASCRIPT_KEY') {
+    if (!Kakao.isInitialized()) Kakao.init(KAKAO_APP_KEY);
+  }
+
+  const OHAENG = {
+    wood:  { glyph:'木', label:'목', name:'목(木)', color:'#7C5CFC', soft:'#EFE9FF', nums:[3,8,13,23,28,33,38,43], msg:'이번 주는 목의 기운이 부족해요. 성장과 확장의 숫자로 균형을 맞춰봤어요.' },
+    fire:  { glyph:'火', label:'화', name:'화(火)', color:'#FF6B9E', soft:'#FFE8F1', nums:[2,7,12,17,22,27,32,42], msg:'이번 주는 화의 기운이 부족해요. 열정과 추진력을 더하는 숫자예요.' },
+    earth: { glyph:'土', label:'토', name:'토(土)', color:'#FFB23E', soft:'#FFF3E0', nums:[5,10,15,20,25,30,35,40], msg:'이번 주는 토의 기운이 부족해요. 안정과 중심을 잡아주는 숫자예요.' },
+    metal: { glyph:'金', label:'금', name:'금(金)', color:'#00C2A8', soft:'#DFF9F5', nums:[4,9,14,19,24,29,34,44], msg:'이번 주는 금의 기운이 부족해요. 결단과 정리의 숫자로 채워봤어요.' },
+    water: { glyph:'水', label:'수', name:'수(水)', color:'#3FA9F5', soft:'#E4F3FE', nums:[1,6,11,16,21,26,31,45], msg:'이번 주는 수의 기운이 부족해요. 지혜와 유연함을 담은 숫자예요.' },
+  };
+
+  const ZODIAC = ['원숭이','닭','개','돼지','쥐','소','호랑이','토끼','용','뱀','말','양'];
+  const ZODIAC_EMOJI = {
+    '쥐':'🐭','소':'🐮','호랑이':'🐯','토끼':'🐰','용':'🐲','뱀':'🐍',
+    '말':'🐴','양':'🐑','원숭이':'🐵','닭':'🐔','개':'🐶','돼지':'🐷'
+  };
+
+  const ZODIAC_TRAIT = {
+    '쥐':'민첩한', '소':'우직한', '호랑이':'저돌적인', '토끼':'신중한',
+    '용':'대담한', '뱀':'지혜로운', '말':'활발한', '양':'온화한',
+    '원숭이':'재치있는', '닭':'부지런한', '개':'의리있는', '돼지':'풍요로운'
+  };
+
+  function getZodiac(year){
+    const name = ZODIAC[year % 12];
+    return { name, emoji: ZODIAC_EMOJI[name] };
+  }
+
+  let selectedCalendar = 'solar';
+  let currentResultData = null;
+  let kakaoConnected = false;
+
+  function scrollInputIntoView(el){
+    setTimeout(() => { el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 300);
+  }
+
+  function digitsOnly(el, maxLen){
+    el.value = el.value.replace(/\D/g, '').slice(0, maxLen);
+  }
+
+  // 시드 기반 셔플용 PRNG. 이전에는 손으로 짠 LCG(i = i*k+c mod n)로 중복 없는 번호를
+  // 뽑았는데, 특정 시드에서는 그 LCG의 순환 주기가 필요한 개수보다 짧아져
+  // while(picked.length < N) 루프가 절대 끝나지 않는(=페이지 멈춤) 버그가 있었어요.
+  // Fisher-Yates 셔플은 시드값과 무관하게 항상 선형 시간에 끝나므로 이 문제가 없어요.
+  function mulberry32(seed){
+    let a = seed >>> 0;
+    return function(){
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function seededShuffle(array, seed){
+    const rand = mulberry32(seed);
+    const arr = array.slice();
+    for(let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(rand() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  const ALL_LOTTO_NUMS = Array.from({ length: 45 }, (_, i) => i + 1);
+
+  function clampHour(el){
+    if(el.value === '') return;
+    const n = Math.min(23, Math.max(0, parseInt(el.value, 10) || 0));
+    el.value = String(n);
+  }
+
+  function goTo(id){
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelector('.screen').scrollTop = 0;
+  }
+
+  function selectCalendar(type){
+    selectedCalendar = type;
+    document.getElementById('pill-solar').classList.toggle('selected', type === 'solar');
+    document.getElementById('pill-lunar').classList.toggle('selected', type === 'lunar');
+  }
+
+  function toggleTime(){
+    const unknown = document.getElementById('check-unknown').checked;
+    document.getElementById('input-hour').disabled = unknown;
+    if(unknown){ document.getElementById('input-hour').value = ''; }
+  }
+
+  function formatBirthInput(el){
+    let digits = el.value.replace(/\D/g, '').slice(0, 8);
+    let formatted = digits;
+    if(digits.length > 4) formatted = digits.slice(0,4) + '.' + digits.slice(4);
+    if(digits.length > 6) formatted = digits.slice(0,4) + '.' + digits.slice(4,6) + '.' + digits.slice(6);
+    el.value = formatted;
+  }
+
+  function isValidDate(y, m, d) {
+    if (y < 1900 || y > new Date().getFullYear()) return false;
+    if (m < 1 || m > 12) return false;
+    const daysInMonth = new Date(y, m, 0).getDate();
+    return d >= 1 && d <= daysInMonth;
+  }
+
+  function getBirthParts(){
+    const digits = document.getElementById('input-birth').value.replace(/\D/g, '');
+    const y = parseInt(digits.slice(0,4), 10) || 1990;
+    const m = parseInt(digits.slice(4,6), 10) || 1;
+    const d = parseInt(digits.slice(6,8), 10) || 1;
+    const complete = digits.length === 8 && isValidDate(y, m, d);
+    return { y, m, d, complete };
+  }
+
+  function previewZodiac(){
+    const preview = document.getElementById('zodiac-preview');
+    const { y, complete } = getBirthParts();
+    if(complete){
+      const z = getZodiac(y);
+      preview.innerHTML = `<span class="emoji">${z.emoji}</span> ${z.name}띠시네요!`;
+    } else {
+      preview.textContent = '';
+    }
+  }
+
+  function computeOheang(){
+    const { y, m, d } = getBirthParts();
+    const hourInput = document.getElementById('input-hour').value;
+    const hour = Math.min(23, Math.max(0, parseInt(hourInput, 10) || 12));
+    // 주(week) 시드를 포함해야 "이번 주" 번호가 매주 바뀝니다. 생년월일만 쓰면 평생 같은 번호가 나오는 버그였어요.
+    const seed = y + m * 31 + d * 7 + hour + getWeekSeed();
+    const keys = Object.keys(OHAENG);
+    const key = keys[seed % keys.length];
+    const pool = OHAENG[key].nums;
+    const shuffled = seededShuffle(pool, seed);
+    const picked = shuffled.slice(0, 6).sort((a, b) => a - b);
+    const bonus = shuffled[6];
+    const zodiac = getZodiac(y);
+    return { key, numbers: picked.sort((a,b)=>a-b), bonus, zodiac };
+  }
+
+  function getWeekLabel(){
+    const now = new Date();
+    const weekNum = Math.ceil(now.getDate() / 7);
+    return `${now.getMonth()+1}월 ${weekNum}주차`;
+  }
+
+  function getWeekSeed(){
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 1);
+    const diff = (now - start) / 86400000;
+    return now.getFullYear() * 100 + Math.ceil((diff + start.getDay() + 1) / 7);
+  }
+
+  function computeLottoman(){
+    const seed = getWeekSeed();
+    const shuffled = seededShuffle(ALL_LOTTO_NUMS, seed);
+    const numbers = shuffled.slice(0, 6).sort((a, b) => a - b);
+    const bonus = shuffled[6];
+    return { numbers, bonus };
+  }
+
+  function getLottoBallColor(num) {
+    if (num <= 10) return '#FFB300';
+    if (num <= 20) return '#29B6F6';
+    if (num <= 30) return '#EF5350';
+    if (num <= 40) return '#8E8E93';
+    return '#66BB6A';
+  }
+
+  function renderBalls(containerId, numbers, bonus){
+    const el = document.getElementById(containerId);
+    el.innerHTML = '';
+    function makeBall(n, extraClass, colorOverride){
+      const b = document.createElement('div');
+      b.className = 'ball' + (extraClass ? ' ' + extraClass : '');
+      if(!extraClass) b.style.background = colorOverride || getLottoBallColor(n);
+      const num = document.createElement('div');
+      num.className = 'ball-num';
+      num.textContent = n;
+      b.appendChild(num);
+      return b;
+    }
+    numbers.forEach((n, i) => {
+      const b = makeBall(n);
+      b.style.animationDelay = (i * 0.08) + 's';
+      el.appendChild(b);
+    });
+    const plus = document.createElement('div');
+    plus.className = 'ball-plus';
+    plus.textContent = '+';
+    plus.style.animationDelay = (numbers.length * 0.08) + 's';
+    el.appendChild(plus);
+    const bonusBall = makeBall(bonus, 'bonus');
+    bonusBall.style.animationDelay = (numbers.length * 0.08 + 0.05) + 's';
+    el.appendChild(bonusBall);
+  }
+
+  function startLoading(){
+    const { complete } = getBirthParts();
+    if(!complete){
+      alert('올바른 생년월일 8자리를 입력해주세요. (예: 19940815)');
+      document.getElementById('input-birth').focus();
+      return;
+    }
+
+    goTo('view-loading');
+    const texts = ['사주팔자 계산 중...', '오행 기운 분석 중...', '이번 주 균형 찾는 중...'];
+    let idx = 0;
+    const el = document.getElementById('loading-text');
+    el.textContent = texts[0];
+    const interval = setInterval(() => {
+      idx++;
+      if(idx < texts.length){
+        el.style.opacity = 0;
+        setTimeout(() => { el.textContent = texts[idx]; el.style.opacity = 1; }, 200);
+      }
+    }, 700);
+
+    setTimeout(() => {
+      clearInterval(interval);
+      renderResult(computeOheang());
+      goTo('view-result');
+    }, 2200);
+  }
+
+  function renderResult(data){
+    const o = OHAENG[data.key];
+    document.documentElement.style.setProperty('--accent', o.color);
+    document.documentElement.style.setProperty('--accent-soft', o.soft);
+    document.getElementById('glyph').textContent = o.glyph;
+    document.getElementById('glyph-label').textContent = o.label;
+    document.getElementById('oheang-badge').textContent = o.name + ' 기운 필요';
+    document.getElementById('oheang-msg').textContent = o.msg;
+
+    document.getElementById('result-date').textContent = getWeekLabel();
+    document.getElementById('result-emoji').textContent = data.zodiac.emoji;
+    document.getElementById('result-title-text').textContent = `${data.zodiac.name}띠의 행운번호`;
+
+    renderBalls('balls', data.numbers, data.bonus);
+
+    const trait = ZODIAC_TRAIT[data.zodiac.name];
+    document.getElementById('numbers-explain').innerHTML =
+      `${data.zodiac.emoji} <b>${data.zodiac.name}띠</b> 특유의 ${trait} 기운과 <b>${o.name}</b> 오행이 만나 이 번호가 나왔어요.`;
+
+    const luckyPointEl = document.getElementById('lucky-point-num');
+    let luckyPoint = data.numbers[0];
+    if(luckyPointEl){
+      const pointIdx = data.numbers.length ? (data.numbers.reduce((a,b)=>a+b,0) % data.numbers.length) : 0;
+      luckyPoint = data.numbers[pointIdx];
+      luckyPointEl.textContent = luckyPoint;
+      luckyPointEl.style.color = o.color;
+    }
+
+    const lottoman = computeLottoman();
+    renderBalls('balls-lottoman', lottoman.numbers, lottoman.bonus);
+
+    currentResultData = { ...data, oheang: o, luckyPoint };
+  }
+
+  function shareResult(){
+    if (typeof Kakao !== 'undefined' && Kakao.isInitialized()) {
+      Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+          title: `이번 주 ${currentResultData.zodiac.name}띠 행운번호 | 너또`,
+          description: `오행 기운: ${currentResultData.oheang.name} | 핵심 숫자: ${currentResultData.luckyPoint}`,
+          imageUrl: 'https://via.placeholder.com/800x400/7C5CFC/ffffff?text=너또+행운번호',
+          link: { mobileWebUrl: window.location.href, webUrl: window.location.href },
+        },
+        buttons: [{ title: '내 행운번호 확인하기', link: { mobileWebUrl: window.location.href, webUrl: window.location.href } }]
+      });
+    } else {
+      alert(`[너또 카카오톡 공유예시]\n\n${currentResultData.zodiac.name}띠님의 이번 주 행운번호:\n${currentResultData.numbers.join(', ')} (보너스: ${currentResultData.bonus})\n\n행운의 핵심 숫자: ${currentResultData.luckyPoint}`);
+    }
+  }
+
+  // STEP 5: 상세 운세
+  const FORTUNE_TEXT = {
+    wood:  { stars:'★★★★☆', desc:'기회가 열리는 한 주',   overall:'목(木)의 기운이 새로운 기회와 변화를 돕는 한 주예요.' },
+    fire:  { stars:'★★★★★', desc:'에너지가 넘치는 한 주', overall:'화(火)의 기운이 열정과 추진력을 밀어주는 한 주예요.' },
+    earth: { stars:'★★★☆☆', desc:'차분히 다지는 한 주',   overall:'토(土)의 기운이 안정과 중심을 잡아주는 한 주예요.' },
+    metal: { stars:'★★★★☆', desc:'결단이 필요한 한 주',   overall:'금(金)의 기운이 정리와 결단을 돕는 한 주예요.' },
+    water: { stars:'★★★★☆', desc:'유연하게 흐르는 한 주', overall:'수(水)의 기운이 지혜와 유연함을 더하는 한 주예요.' },
+  };
+  const WEEKDAYS = ['월요일','화요일','수요일','목요일','금요일','토요일','일요일'];
+
+  function unlockFortune(){
+    kakaoConnected = true;
+    if(!currentResultData){
+      const data = computeOheang();
+      const luckyPoint = data.numbers[Math.floor(data.numbers.length / 2)];
+      currentResultData = { ...data, oheang: OHAENG[data.key], luckyPoint };
+    }
+    renderFortune();
+    goTo('view-fortune');
+  }
+
+  function renderFortune(){
+    const data = currentResultData;
+    const o = data.oheang;
+    const text = FORTUNE_TEXT[data.key];
+
+    document.getElementById('fortune-zodiac-emoji').textContent = data.zodiac.emoji;
+    document.getElementById('fortune-zodiac-name').textContent = data.zodiac.name;
+    document.getElementById('fortune-date').textContent = getWeekLabel();
+
+    const starsEl = document.getElementById('fortune-stars');
+    starsEl.textContent = text.stars;
+    starsEl.style.color = o.color;
+    document.getElementById('fortune-stars-desc').textContent = text.desc;
+    document.getElementById('fortune-overall-desc').textContent = text.overall;
+
+    const { y, m, d } = getBirthParts();
+    const birthSeed = y + m * 31 + d * 7;
+    document.getElementById('fortune-lucky-day').textContent = WEEKDAYS[(birthSeed + getWeekSeed()) % 7];
+
+    const luckyNumEl = document.getElementById('fortune-lucky-num');
+    luckyNumEl.textContent = data.luckyPoint;
+    luckyNumEl.style.color = o.color;
+
+    let caution = ((data.luckyPoint * 7 + 13) % 45) + 1;
+    if(caution === data.luckyPoint) caution = (caution % 45) + 1;
+    document.getElementById('fortune-caution').textContent = `⚠️ 조심할 숫자: ${caution}`;
+  }
+
+  // STEP 6/7: 궁합번호
+  function selectRelation(btn){
+    document.querySelectorAll('#compat-relation-row .compat-pill').forEach(p => p.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  function renderCompatBalls(containerId, numbers){
+    const el = document.getElementById(containerId);
+    el.innerHTML = '';
+    numbers.forEach((n, i) => {
+      const b = document.createElement('div');
+      b.className = 'ball';
+      b.style.background = getLottoBallColor(n);
+      b.style.animationDelay = (i * 0.08) + 's';
+      const num = document.createElement('div');
+      num.className = 'ball-num';
+      num.textContent = n;
+      b.appendChild(num);
+      el.appendChild(b);
+    });
+  }
+
+  function computeCompat(){
+    const py = parseInt(document.getElementById('compat-year').value, 10) || 1994;
+    const pm = parseInt(document.getElementById('compat-month').value, 10) || 8;
+    const pd = parseInt(document.getElementById('compat-day').value, 10) || 15;
+
+    if(!isValidDate(py, pm, pd)){
+      alert('상대방의 올바른 생년월일을 입력해주세요.');
+      return;
+    }
+
+    const my = getBirthParts();
+    const seed = (my.y + my.m * 31 + my.d * 7) + (py + pm * 31 + pd * 7) + getWeekSeed();
+    const shuffled = seededShuffle(ALL_LOTTO_NUMS, seed);
+    const picked = shuffled.slice(0, 3).sort((a, b) => a - b);
+    const best = picked[seed % picked.length];
+
+    renderCompatBalls('compat-balls', picked);
+    document.getElementById('compat-best-num').textContent = best;
+
+    const starLevels = ['★★☆☆☆', '★★★☆☆', '★★★★☆', '★★★★★'];
+    const starDescs  = ['조금 어긋나는 한 주', '무난하게 맞는 한 주', '잘 맞는 한 주', '환상의 궁합인 한 주'];
+    const starIdx = seed % starLevels.length;
+    document.getElementById('compat-stars').textContent = starLevels[starIdx];
+    document.getElementById('compat-stars-desc').textContent = starDescs[starIdx];
+
+    goTo('view-compat-result');
+  }
+
+  function shareCompat(){
+    const nums = Array.from(document.querySelectorAll('#compat-balls .ball-num')).map(x => x.textContent).join(' · ');
+    const best = document.getElementById('compat-best-num').textContent;
+    alert(`[너또 궁합 공유예시]\n\n💛 우리 이번 주 궁합번호 나왔어!\n\n🍀 궁합번호\n${nums}\n\n가장 강한 번호: ${best}번\n\n너도 확인해봐!`);
+  }
+
+  // STEP 8: 다음 주 알림 신청
+  function renderSubscribe(){
+    const beforeEl = document.getElementById('subscribe-before');
+    const afterEl = document.getElementById('subscribe-after');
+    const titleEl = document.getElementById('subscribe-title');
+    const descEl = document.getElementById('subscribe-desc');
+
+    if(kakaoConnected){
+      document.getElementById('subscribe-emoji').textContent = '🔔';
+      titleEl.textContent = '이미 알림이 켜져 있어요';
+      descEl.textContent = '연결된 카카오 계정으로 매주 새로운 행운번호와 운세를 보내드릴게요.';
+      beforeEl.style.display = 'none';
+      afterEl.style.display = 'block';
+    } else {
+      document.getElementById('subscribe-emoji').textContent = '🔔';
+      titleEl.textContent = '매주 화요일, 새로운 행운을 받아보세요';
+      descEl.textContent = '카카오톡으로 매주 새로운 행운번호와 운세를 보내드려요.';
+      beforeEl.style.display = 'block';
+      afterEl.style.display = 'none';
+    }
+  }
+
+  function subscribeWeekly(){
+    kakaoConnected = true;
+    document.getElementById('subscribe-emoji').textContent = '✅';
+    document.getElementById('subscribe-title').textContent = '알림 신청 완료!';
+    document.getElementById('subscribe-desc').textContent = '매주 화요일 오전, 카카오톡으로 새로운 행운번호와 운세를 보내드릴게요.';
+    document.getElementById('subscribe-before').style.display = 'none';
+    document.getElementById('subscribe-after').style.display = 'block';
+  }
+
+  function renderPopularPreview(){
+    const el = document.getElementById('popular-preview-balls');
+    if(!el) return;
+    const lottoman = computeLottoman();
+    el.innerHTML = '';
+    lottoman.numbers.forEach(n => {
+      const b = document.createElement('div');
+      b.className = 'mini-preview-ball';
+      b.style.background = getLottoBallColor(n);
+      b.textContent = n;
+      el.appendChild(b);
+    });
+  }
+  renderPopularPreview();
+</script>
+
+</body>
+</html>
