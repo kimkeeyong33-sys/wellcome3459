@@ -397,8 +397,8 @@ function SignupPageInner() {
       </div>
 
       <div
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-5 pb-6 pt-3 bg-white"
-        style={{ boxShadow: "0 -8px 20px rgba(11,37,64,0.08)" }}
+        className="fixed left-1/2 -translate-x-1/2 w-full max-w-md px-5 pb-6 pt-3 bg-white"
+        style={{ boxShadow: "0 -8px 20px rgba(11,37,64,0.08)", bottom: "64px" }}
       >
         <button
           onClick={submit}

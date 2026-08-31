@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     videoUrl,
   } = body;
 
-  if (!companyName || !contactName || !contactPhone || !category || !region || !productName || !quantity) {
+  if (!contactPhone || !productName || !quantity) {
     return NextResponse.json({ error: "필수 항목이 누락되었습니다." }, { status: 400 });
   }
 
@@ -32,20 +32,16 @@ export async function POST(req: NextRequest) {
 
   const supabaseAdmin = createClient(supabaseUrl, serviceKey);
 
-  const { data: catRow } = await supabaseAdmin
-    .from("categories")
-    .select("id")
-    .eq("name", category)
-    .single();
-  const { data: regRow } = await supabaseAdmin
-    .from("regions")
-    .select("id")
-    .eq("name", region)
-    .single();
+  const catRow = category
+    ? (await supabaseAdmin.from("categories").select("id").eq("name", category).maybeSingle()).data
+    : null;
+  const regRow = region
+    ? (await supabaseAdmin.from("regions").select("id").eq("name", region).maybeSingle()).data
+    : null;
 
   const { error } = await supabaseAdmin.from("seller_requests").insert({
-    company_name: companyName,
-    contact_name: contactName,
+    company_name: companyName || null,
+    contact_name: contactName || null,
     contact_phone: contactPhone,
     category_id: catRow?.id ?? null,
     region_id: regRow?.id ?? null,

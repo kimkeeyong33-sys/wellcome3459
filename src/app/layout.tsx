@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import AppShell from "@/components/AppShell";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://dumpingjumping.vercel.app";
 const DEFAULT_DESCRIPTION =
@@ -54,7 +55,7 @@ export default function RootLayout({
     <html lang="ko">
       <body className="font-sans overflow-x-hidden">
         <div className="mx-auto max-w-md min-h-screen bg-white shadow-sm overflow-x-hidden">
-          {children}
+          <AppShell>{children}</AppShell>
         </div>
       </body>
     </html>

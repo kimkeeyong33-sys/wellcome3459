@@ -106,8 +106,8 @@ create table if not exists public.interests (
 -- 10. 판매자 매물 등록 신청 (누구나 신청 가능, 관리자가 검토 후 승인해야 deals에 등록됨)
 create table if not exists public.seller_requests (
   id uuid primary key default gen_random_uuid(),
-  company_name text not null,
-  contact_name text not null,
+  company_name text, -- 선택 항목 (등록 마찰을 줄이기 위해 필수 해제)
+  contact_name text, -- 선택 항목
   contact_phone text not null,
   category_id int references public.categories(id),
   region_id int references public.regions(id),
@@ -130,6 +130,8 @@ alter table public.interests add column if not exists completed_at timestamptz;
 alter table public.deals add column if not exists description text;
 alter table public.seller_requests add column if not exists hope_duration_hours int;
 update public.categories set name = '전자제품' where name = '전자부품';
+alter table public.seller_requests alter column company_name drop not null;
+alter table public.seller_requests alter column contact_name drop not null;
 
 -- ---------------- RLS (Row Level Security) ----------------
 alter table public.members enable row level security;

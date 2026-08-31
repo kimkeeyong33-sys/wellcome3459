@@ -9,8 +9,8 @@ import { formatPriceInput, parsePriceInput } from "@/lib/format";
 
 type SellerRequest = {
   id: string;
-  company_name: string;
-  contact_name: string;
+  company_name: string | null;
+  contact_name: string | null;
   contact_phone: string;
   product_name: string;
   quantity: number;
@@ -30,9 +30,20 @@ type ActiveDeal = {
   total_qty: number;
   remaining_qty: number;
   closes_at: string;
+  created_at: string;
   categories: { name: string } | null;
   regions: { name: string } | null;
 };
+
+function isToday(dateStr: string) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
 
 export default function AdminPage() {
   const [key, setKey] = useState<string | null>(null);
@@ -180,6 +191,28 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
         <button onClick={onLogout} className="text-sm text-white/70 font-bold">
           로그아웃
         </button>
+      </div>
+
+      <div className="px-5 pt-4">
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { label: "오늘 등록 매물", value: activeDeals.filter((d) => isToday(d.created_at)).length },
+            { label: "오늘 구매희망", value: buyRequests.filter((b) => isToday(b.created_at)).length },
+            { label: "미연락 리드", value: interests.filter((i) => !i.contacted).length },
+            {
+              label: "마감임박(6h)",
+              value: activeDeals.filter((d) => {
+                const remainMs = new Date(d.closes_at).getTime() - new Date().getTime();
+                return remainMs > 0 && remainMs <= 6 * 60 * 60 * 1000;
+              }).length,
+            },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white border border-gray200 rounded-xl px-2 py-3 text-center">
+              <div className="text-lg font-black text-navy">{stat.value}</div>
+              <div className="text-[11px] text-gray500 mt-0.5 leading-tight">{stat.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="px-5 pt-4 flex flex-col gap-3">
@@ -385,11 +418,11 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
           <div key={r.id} className="bg-white border border-gray200 rounded-2xl px-4 py-4">
             <div className="flex items-center gap-1.5 text-xs font-bold text-gray500">
               <span>{categoryIcons[r.categories?.name ?? ""] ?? "🗂️"}</span>
-              {r.categories?.name} · {r.regions?.name}
+              {[r.categories?.name, r.regions?.name].filter(Boolean).join(" · ") || "카테고리/지역 미입력"}
             </div>
             <div className="text-base font-bold text-gray900 mt-1.5">{r.product_name}</div>
             <div className="text-sm text-gray500 mt-1">
-              {r.company_name} · {r.contact_name} · {r.contact_phone}
+              {[r.company_name, r.contact_name, r.contact_phone].filter(Boolean).join(" · ")}
             </div>
             <div className="text-sm text-gray500 mt-1">
               수량 {r.quantity}개

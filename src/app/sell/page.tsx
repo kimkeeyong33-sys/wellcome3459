@@ -23,11 +23,12 @@ export default function SellPage() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   const submit = async () => {
     setError(null);
-    if (!companyName || !contactName || !contactPhone || !category || !region || !productName || !quantity) {
-      setError("필수 항목을 모두 입력해주세요.");
+    if (!productName || !quantity || !contactPhone) {
+      setError("매물명 · 수량 · 연락처는 꼭 입력해주세요.");
       return;
     }
     setSubmitting(true);
@@ -36,11 +37,11 @@ export default function SellPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          companyName,
-          contactName,
+          companyName: companyName || null,
+          contactName: contactName || null,
           contactPhone,
-          category,
-          region,
+          category: category || null,
+          region: region || null,
           productName,
           quantity: Number(quantity),
           hopePrice: parsePriceInput(hopePrice) ?? null,
@@ -119,82 +120,6 @@ export default function SellPage() {
 
       <div className="flex-1 px-5 py-5 flex flex-col gap-5">
         <div>
-          <label className="text-sm font-bold text-navy mb-2 block">업체명 *</label>
-          <input
-            className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
-            style={{ height: "52px" }}
-            value={companyName}
-            onChange={(e) => setCompanyName(e.target.value)}
-            placeholder="예: 웰컴코리아(주)"
-          />
-        </div>
-
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label className="text-sm font-bold text-navy mb-2 block">담당자명 *</label>
-            <input
-              className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
-              style={{ height: "52px" }}
-              value={contactName}
-              onChange={(e) => setContactName(e.target.value)}
-              placeholder="홍길동"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="text-sm font-bold text-navy mb-2 block">연락처 *</label>
-            <input
-              className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
-              style={{ height: "52px" }}
-              value={contactPhone}
-              onChange={(e) => setContactPhone(e.target.value)}
-              placeholder="010-0000-0000"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="text-base font-bold text-navy mb-2 block">카테고리 *</label>
-          <div className="grid grid-cols-3 gap-2">
-            {mockCategories.map((c) => {
-              const picked = category === c;
-              const color = categoryColors[c];
-              return (
-                <button
-                  key={c}
-                  onClick={() => setCategory(c)}
-                  className="flex flex-col items-center justify-center gap-1 rounded-xl border py-3.5 px-1 text-center"
-                  style={
-                    picked
-                      ? { background: color.solid, borderColor: color.solid, color: "#fff" }
-                      : { background: color.bg, borderColor: color.bg, color: color.text }
-                  }
-                >
-                  <span className="text-2xl leading-none">{categoryIcons[c]}</span>
-                  <span className="text-sm font-bold leading-tight">{c}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div>
-          <label className="text-sm font-bold text-navy mb-2 block">지역 *</label>
-          <div className="grid grid-cols-4 gap-2">
-            {mockRegions.map((r) => (
-              <button
-                key={r}
-                onClick={() => setRegion(r)}
-                className={`text-sm py-2.5 rounded-full border-2 font-bold text-center ${
-                  region === r ? "bg-navy text-white border-navy" : "border-gray200 text-gray500"
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
           <label className="text-sm font-bold text-navy mb-2 block">매물명 *</label>
           <input
             className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
@@ -218,26 +143,37 @@ export default function SellPage() {
             />
           </div>
           <div className="flex-1">
-            <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
-              희망 단가
-              <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
-                선택
-              </span>
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                inputMode="numeric"
-                className="w-full border-2 border-gray200 rounded-xl pl-4 pr-10 text-base outline-none focus:border-orange"
-                style={{ height: "52px" }}
-                value={formatPriceInput(hopePrice)}
-                onChange={(e) => setHopePrice(e.target.value)}
-                placeholder="219,000"
-              />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray500 font-medium">
-                원
-              </span>
-            </div>
+            <label className="text-sm font-bold text-navy mb-2 block">연락처 *</label>
+            <input
+              className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+              style={{ height: "52px" }}
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+              placeholder="010-0000-0000"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
+            희망 단가
+            <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
+              선택
+            </span>
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              inputMode="numeric"
+              className="w-full border-2 border-gray200 rounded-xl pl-4 pr-10 text-base outline-none focus:border-orange"
+              style={{ height: "52px" }}
+              value={formatPriceInput(hopePrice)}
+              onChange={(e) => setHopePrice(e.target.value)}
+              placeholder="219,000"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray500 font-medium">
+              원
+            </span>
           </div>
         </div>
 
@@ -272,27 +208,105 @@ export default function SellPage() {
           </p>
         </div>
 
-        <div>
-          <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
-            추가 설명
-            <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
-              선택
-            </span>
-          </label>
-          <textarea
-            className="w-full border-2 border-gray200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange"
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="소비기한, 보관상태, 마감 희망일 등"
-          />
-        </div>
-
-        <ImageUploader onChange={setImages} />
-
-        <VideoUploader onChange={setVideoUrl} />
-
         {error && <div className="text-sm text-orange font-medium">{error}</div>}
+
+        <button
+          type="button"
+          onClick={() => setShowDetails((v) => !v)}
+          className="flex items-center justify-between border-2 border-gray200 rounded-xl px-4 text-sm font-bold text-navy"
+          style={{ height: "52px" }}
+        >
+          상세 정보 추가 (선택)
+          <span className="text-gray500">{showDetails ? "접기 ▴" : "펼치기 ▾"}</span>
+        </button>
+        {!showDetails && (
+          <p className="text-xs text-gray500 -mt-3">
+            없어도 등록돼요, 매니저가 통화로 확인해요.
+          </p>
+        )}
+
+        {showDetails && (
+          <div className="flex flex-col gap-5 border-2 border-gray200 rounded-2xl p-4">
+            <div>
+              <label className="text-sm font-bold text-navy mb-2 block">업체명</label>
+              <input
+                className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+                style={{ height: "52px" }}
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="예: 웰컴코리아(주)"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-bold text-navy mb-2 block">담당자명</label>
+              <input
+                className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+                style={{ height: "52px" }}
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+                placeholder="홍길동"
+              />
+            </div>
+
+            <div>
+              <label className="text-base font-bold text-navy mb-2 block">카테고리</label>
+              <div className="grid grid-cols-3 gap-2">
+                {mockCategories.map((c) => {
+                  const picked = category === c;
+                  const color = categoryColors[c];
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => setCategory(picked ? "" : c)}
+                      className="flex flex-col items-center justify-center gap-1 rounded-xl border py-3.5 px-1 text-center"
+                      style={
+                        picked
+                          ? { background: color.solid, borderColor: color.solid, color: "#fff" }
+                          : { background: color.bg, borderColor: color.bg, color: color.text }
+                      }
+                    >
+                      <span className="text-2xl leading-none">{categoryIcons[c]}</span>
+                      <span className="text-sm font-bold leading-tight">{c}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-bold text-navy mb-2 block">지역</label>
+              <div className="grid grid-cols-4 gap-2">
+                {mockRegions.map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setRegion(region === r ? "" : r)}
+                    className={`text-sm py-2.5 rounded-full border-2 font-bold text-center ${
+                      region === r ? "bg-navy text-white border-navy" : "border-gray200 text-gray500"
+                    }`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-bold text-navy mb-2 block">추가 설명</label>
+              <textarea
+                className="w-full border-2 border-gray200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="소비기한, 보관상태, 마감 희망일 등"
+              />
+            </div>
+
+            <ImageUploader onChange={setImages} />
+
+            <VideoUploader onChange={setVideoUrl} />
+          </div>
+        )}
       </div>
 
       <div className="px-5 pb-6">

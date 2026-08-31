@@ -29,6 +29,26 @@ function DealDetailPageInner() {
   const [quickError, setQuickError] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShare = async () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: deal.title, text: `${deal.title} · ${formatPrice(deal.deal_price)}`, url });
+      } catch {
+        // 사용자가 공유를 취소한 경우 — 무시
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      // 클립보드 접근 실패 — 무시
+    }
+  };
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
@@ -239,6 +259,13 @@ function DealDetailPageInner() {
           >
             -{percentOff(deal.original_price, deal.deal_price)}%
           </span>
+          <button
+            type="button"
+            onClick={handleShare}
+            className="ml-auto flex items-center gap-1 text-xs font-bold text-gray500 border border-gray200 rounded-full px-3 py-1.5"
+          >
+            {shareCopied ? "링크 복사됨 ✓" : "공유 ↗"}
+          </button>
         </div>
 
         <div>
@@ -322,8 +349,8 @@ function DealDetailPageInner() {
           </div>
 
           <div
-            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-5 pb-6 pt-3 bg-white"
-            style={{ boxShadow: "0 -8px 20px rgba(11,37,64,0.08)" }}
+            className="fixed left-1/2 -translate-x-1/2 w-full max-w-md px-5 pb-6 pt-3 bg-white"
+            style={{ boxShadow: "0 -8px 20px rgba(11,37,64,0.08)", bottom: "64px" }}
           >
             {showQuickForm && !interested ? (
               <div className="border-2 border-gray200 rounded-2xl p-4">
