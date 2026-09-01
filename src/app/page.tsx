@@ -8,6 +8,7 @@ import { formatPrice } from "@/lib/format";
 import SplashScreen from "@/components/SplashScreen";
 import InstallAppButton from "@/components/InstallAppButton";
 import AdSlot from "@/components/AdSlot";
+import ScrollHint from "@/components/ScrollHint";
 
 const TODAY_BADGE_THRESHOLD = 5; // 이보다 적으면 "오늘 N건" 배너를 아예 숨김 (빈약한 숫자 노출 방지)
 
@@ -113,6 +114,8 @@ export default function Home() {
             🔥 오늘 등록된 덤핑 매물 {todayCount}건 · 지금 확인하기 →
           </Link>
         )}
+
+        <ScrollHint />
       </div>
 
       <div className="px-5 pt-5">

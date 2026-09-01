@@ -45,3 +45,28 @@ body {
 .progress-fill {
   background: #e8622c;
 }
+
+/* 스크롤 가능함을 알려주는 손 모양 힌트 */
+@keyframes scroll-hint {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(5px);
+  }
+}
+
+.animate-scroll-hint {
+  display: inline-block;
+  animation: scroll-hint 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-scroll-hint {
+    animation: none;
+    opacity: 0.6;
+  }
+}

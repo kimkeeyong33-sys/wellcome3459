@@ -7,6 +7,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { mockCategories, mockRegions, categoryIcons, categoryColors } from "@/lib/mockData";
 import { subscribeToPush } from "@/lib/pushClient";
 import { generateRefCode } from "@/lib/refCode";
+import ScrollHint from "@/components/ScrollHint";
 
 const DRAFT_KEY = "dj_signup_draft";
 
@@ -250,6 +251,7 @@ function SignupPageInner() {
           <br />
           지역만 골라주세요
         </h1>
+        <ScrollHint />
       </div>
 
       <div className="flex-1 px-5 py-5 flex flex-col gap-6" style={{ paddingBottom: "108px" }}>
