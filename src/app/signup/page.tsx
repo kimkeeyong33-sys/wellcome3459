@@ -93,7 +93,9 @@ function SignupPageInner() {
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "kakao",
-      options: { redirectTo },
+      // 이메일은 카카오에 별도 권한 신청이 필요해서, 어차피 안 쓰는 이메일 스코프는 요청하지 않음
+      // (전화번호는 로그인 후 별도로 직접 입력받음)
+      options: { redirectTo, scopes: "profile_nickname profile_image" },
     });
     if (error) setError(error.message);
   };
