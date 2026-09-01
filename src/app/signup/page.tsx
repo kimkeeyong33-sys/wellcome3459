@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -38,6 +38,10 @@ function SignupPageInner() {
     "idle"
   );
   const [error, setError] = useState<string | null>(null);
+  const [showSelectionPrompt, setShowSelectionPrompt] = useState(false);
+  const [highlight, setHighlight] = useState<"categories" | "regions" | null>(null);
+  const categoriesRef = useRef<HTMLDivElement>(null);
+  const regionsRef = useRef<HTMLDivElement>(null);
 
   // 카카오 로그인은 페이지를 완전히 떠났다 돌아오기 때문에, 그 사이 골라둔
   // 카테고리·지역 선택이 날아가지 않게 sessionStorage에 잠깐 저장해둡니다.
@@ -70,6 +74,21 @@ function SignupPageInner() {
 
   const toggle = (list: string[], set: (v: string[]) => void, value: string) => {
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+  };
+
+  const selectAllAndClose = () => {
+    if (categories.length === 0) setCategories([...mockCategories]);
+    if (regions.length === 0) setRegions([...mockRegions]);
+    setShowSelectionPrompt(false);
+  };
+
+  const goPickManually = () => {
+    setShowSelectionPrompt(false);
+    const missing = categories.length === 0 ? "categories" : "regions";
+    const ref = missing === "categories" ? categoriesRef : regionsRef;
+    ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setHighlight(missing);
+    setTimeout(() => setHighlight(null), 1500);
   };
 
   const startKakaoLogin = async () => {
@@ -115,7 +134,7 @@ function SignupPageInner() {
       return;
     }
     if (categories.length === 0 || regions.length === 0) {
-      setError("관심 카테고리와 지역을 최소 1개씩 선택해주세요.");
+      setShowSelectionPrompt(true);
       return;
     }
     setSubmitting(true);
@@ -234,7 +253,14 @@ function SignupPageInner() {
       </div>
 
       <div className="flex-1 px-5 py-5 flex flex-col gap-6" style={{ paddingBottom: "108px" }}>
-        <div>
+        <div
+          ref={categoriesRef}
+          style={{
+            boxShadow: highlight === "categories" ? "0 0 0 3px rgba(242,137,31,0.5)" : "none",
+            borderRadius: "16px",
+            transition: "box-shadow 0.3s",
+          }}
+        >
           <label className="mb-2 flex items-center justify-between">
             <span className="text-base font-bold text-navy">관심 카테고리</span>
             <button
@@ -270,7 +296,14 @@ function SignupPageInner() {
           </div>
         </div>
 
-        <div>
+        <div
+          ref={regionsRef}
+          style={{
+            boxShadow: highlight === "regions" ? "0 0 0 3px rgba(242,137,31,0.5)" : "none",
+            borderRadius: "16px",
+            transition: "box-shadow 0.3s",
+          }}
+        >
           <label className="mb-2 flex items-center justify-between">
             <span className="text-base font-bold text-navy">관심 지역</span>
             <button
@@ -412,6 +445,46 @@ function SignupPageInner() {
           {submitting ? "처리 중..." : "알림 받기 시작"}
         </button>
       </div>
+
+      {showSelectionPrompt && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center"
+          style={{ background: "rgba(0,0,0,0.5)" }}
+          onClick={() => setShowSelectionPrompt(false)}
+        >
+          <div
+            className="bg-white w-full max-w-md rounded-t-3xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="font-display text-xl text-navy mb-1.5">
+              {categories.length === 0 && regions.length === 0
+                ? "관심 카테고리와 지역을 골라주세요"
+                : categories.length === 0
+                ? "관심 카테고리를 골라주세요"
+                : "관심 지역을 골라주세요"}
+            </div>
+            <p className="text-sm text-gray500 mb-5 leading-relaxed">
+              어떤 매물 알림을 받을지 알아야 딱 맞는 특가만 보내드릴 수 있어요.
+            </p>
+            <div className="flex flex-col gap-2.5">
+              <button
+                onClick={selectAllAndClose}
+                className="w-full text-white font-bold rounded-2xl text-base"
+                style={{ background: "linear-gradient(135deg, #D9531E, #F2891F)", padding: "16px 0" }}
+              >
+                🎯 전체 카테고리·지역 다 받을게요
+              </button>
+              <button
+                onClick={goPickManually}
+                className="w-full font-bold rounded-2xl text-base border-2 border-gray200 text-navy"
+                style={{ padding: "16px 0" }}
+              >
+                📋 직접 선택할게요
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

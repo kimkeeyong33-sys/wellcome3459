@@ -17,6 +17,14 @@ export default function Home() {
   const [todayCount, setTodayCount] = useState(0);
   const [preview, setPreview] = useState<Deal[]>(EXAMPLE_DEALS);
   const [isExample, setIsExample] = useState(true);
+  const [isMember, setIsMember] = useState(false);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+    supabase.auth.getSession().then(({ data }) => {
+      setIsMember(!!data.session?.user);
+    });
+  }, []);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return; // 데모 모드: 예시 매물 그대로 노출
@@ -258,18 +266,34 @@ export default function Home() {
         className="fixed left-1/2 -translate-x-1/2 w-full max-w-md px-5 pb-6 pt-3 bg-white"
         style={{ boxShadow: "0 -8px 20px rgba(11,37,64,0.08)", bottom: "64px" }}
       >
-        <Link
-          href="/signup"
-          className="block text-white text-center font-bold rounded-2xl shadow-lg"
-          style={{
-            background: "linear-gradient(135deg, #D9531E, #F2891F)",
-            padding: "20px 0",
-            fontSize: "19px",
-            boxShadow: "0 10px 24px rgba(217,83,30,0.35)",
-          }}
-        >
-          🔔 무료 알림받기
-        </Link>
+        {isMember ? (
+          <Link
+            href="/mypage"
+            className="block text-center font-bold rounded-2xl"
+            style={{
+              background: "#E8F8EC",
+              border: "2px solid #34C471",
+              color: "#1D8A44",
+              padding: "18px 0",
+              fontSize: "19px",
+            }}
+          >
+            ✓ 덤핑 알림받는 중
+          </Link>
+        ) : (
+          <Link
+            href="/signup"
+            className="block text-white text-center font-bold rounded-2xl shadow-lg"
+            style={{
+              background: "linear-gradient(135deg, #D9531E, #F2891F)",
+              padding: "20px 0",
+              fontSize: "19px",
+              boxShadow: "0 10px 24px rgba(217,83,30,0.35)",
+            }}
+          >
+            🔔 무료 알림받기
+          </Link>
+        )}
       </div>
     </main>
     </SplashScreen>
