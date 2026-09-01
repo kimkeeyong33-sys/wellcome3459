@@ -170,13 +170,16 @@ function DealDetailPageInner() {
           </button>
         )}
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 pointer-events-none"
           style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 35%, rgba(0,0,0,0.6) 100%)" }}
         />
 
-        <div className="relative z-10 flex items-start justify-between gap-2">
+        <div className="relative z-10 flex items-start justify-between gap-2 pointer-events-none">
           <div className="flex items-center gap-2 min-w-0">
-            <Link href="/" className="bg-white rounded-lg px-3.5 py-2.5 inline-block flex-shrink-0">
+            <Link
+              href="/"
+              className="bg-white rounded-lg px-3.5 py-2.5 inline-block flex-shrink-0 pointer-events-auto"
+            >
               <img src="/images/logo.png" alt="덤핑점핑" className="h-8 w-auto" />
             </Link>
             <span className="text-white/70 text-sm tracking-wide truncate">Powered by JumpX</span>
@@ -191,7 +194,7 @@ function DealDetailPageInner() {
           )}
         </div>
 
-        <div className="relative z-10">
+        <div className="relative z-10 pointer-events-none">
           <div className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-white/20 px-3 py-1.5 rounded-full mb-2.5">
             <span className="text-sm">{categoryIcons[deal.category] ?? "🗂️"}</span>
             {deal.category}
