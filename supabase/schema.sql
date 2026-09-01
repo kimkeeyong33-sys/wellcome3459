@@ -143,6 +143,12 @@ alter table public.seller_requests add column if not exists origin text;
 alter table public.seller_requests add column if not exists spec text;
 alter table public.seller_requests add column if not exists storage_condition text;
 
+-- 수량 단위 명시 + 최소주문수량(MOQ)
+alter table public.deals add column if not exists quantity_unit text default '개';
+alter table public.deals add column if not exists min_order_qty int;
+alter table public.seller_requests add column if not exists quantity_unit text default '개';
+alter table public.seller_requests add column if not exists min_order_qty int;
+
 -- ---------------- RLS (Row Level Security) ----------------
 alter table public.members enable row level security;
 alter table public.member_categories enable row level security;

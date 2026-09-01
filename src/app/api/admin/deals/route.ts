@@ -19,6 +19,8 @@ export async function POST(req: NextRequest) {
     dealPrice,
     totalQty,
     remainingQty,
+    quantityUnit,
+    minOrderQty,
     location,
     closesAt,
     requestId, // 판매자 신청에서 승인해서 넘어온 경우
@@ -65,6 +67,8 @@ export async function POST(req: NextRequest) {
       deal_price: dealPrice,
       total_qty: totalQty,
       remaining_qty: remainingQty ?? totalQty,
+      quantity_unit: quantityUnit || "개",
+      min_order_qty: minOrderQty || null,
       location,
       closes_at: closesAt,
       status: "active",

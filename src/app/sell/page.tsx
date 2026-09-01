@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { mockCategories, mockRegions, categoryIcons, categoryColors } from "@/lib/mockData";
+import { mockCategories, mockRegions, categoryIcons, categoryColors, quantityUnits } from "@/lib/mockData";
 import ImageUploader from "@/components/ImageUploader";
 import VideoUploader from "@/components/VideoUploader";
 import { formatPriceInput, parsePriceInput } from "@/lib/format";
@@ -15,6 +15,8 @@ export default function SellPage() {
   const [region, setRegion] = useState<string>("");
   const [productName, setProductName] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [quantityUnit, setQuantityUnit] = useState(quantityUnits[0]);
+  const [minOrderQty, setMinOrderQty] = useState("");
   const [hopePrice, setHopePrice] = useState("");
   const [hopeDurationHours, setHopeDurationHours] = useState("24");
   const [description, setDescription] = useState("");
@@ -48,6 +50,8 @@ export default function SellPage() {
           region: region || null,
           productName,
           quantity: Number(quantity),
+          quantityUnit,
+          minOrderQty: minOrderQty ? Number(minOrderQty) : null,
           hopePrice: parsePriceInput(hopePrice) ?? null,
           hopeDurationHours: hopeDurationHours ? Number(hopeDurationHours) : null,
           description,
@@ -138,33 +142,46 @@ export default function SellPage() {
           />
         </div>
 
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label className="text-sm font-bold text-navy mb-2 block">수량 *</label>
+        <div>
+          <label className="text-sm font-bold text-navy mb-2 block">수량 *</label>
+          <div className="flex gap-2">
             <input
               type="number"
-              className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+              className="flex-1 min-w-0 border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
               style={{ height: "52px" }}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               placeholder="55"
             />
-          </div>
-          <div className="flex-1">
-            <label className="text-sm font-bold text-navy mb-2 block">연락처 *</label>
-            <input
-              className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
-              style={{ height: "52px" }}
-              value={contactPhone}
-              onChange={(e) => setContactPhone(e.target.value)}
-              placeholder="010-0000-0000"
-            />
+            <select
+              className="border-2 border-gray200 rounded-xl px-3 text-base outline-none focus:border-orange"
+              style={{ height: "52px", width: "96px" }}
+              value={quantityUnit}
+              onChange={(e) => setQuantityUnit(e.target.value)}
+            >
+              {quantityUnits.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
         <div>
+          <label className="text-sm font-bold text-navy mb-2 block">연락처 *</label>
+          <input
+            className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+            style={{ height: "52px" }}
+            value={contactPhone}
+            onChange={(e) => setContactPhone(e.target.value)}
+            placeholder="010-0000-0000"
+          />
+        </div>
+
+        <div>
           <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
-            희망 단가
+            희망 단가 (창고 출고가)
             <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
               선택
             </span>
@@ -181,6 +198,31 @@ export default function SellPage() {
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray500 font-medium">
               원
+            </span>
+          </div>
+          <p className="text-xs text-gray500 mt-2">
+            창고에서 직접 가져가는 가격 기준이에요. 배송비는 별도예요.
+          </p>
+        </div>
+
+        <div>
+          <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
+            최소주문수량(MOQ)
+            <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
+              선택
+            </span>
+          </label>
+          <div className="relative">
+            <input
+              type="number"
+              className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+              style={{ height: "52px" }}
+              value={minOrderQty}
+              onChange={(e) => setMinOrderQty(e.target.value)}
+              placeholder="예: 5"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray500 font-medium">
+              {quantityUnit} 이상
             </span>
           </div>
         </div>
@@ -305,34 +347,46 @@ export default function SellPage() {
             <div>
               <label className="text-base font-bold text-navy mb-2 block">상품 상세 스펙</label>
               <div className="flex flex-col gap-3">
-                <input
-                  className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
-                  style={{ height: "52px" }}
-                  value={packageUnit}
-                  onChange={(e) => setPackageUnit(e.target.value)}
-                  placeholder="포장 단위 (예: 20kg 박스, 50개입 박스)"
-                />
-                <input
-                  className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
-                  style={{ height: "52px" }}
-                  value={spec}
-                  onChange={(e) => setSpec(e.target.value)}
-                  placeholder="규격/사이즈 (예: 500ml, S~L 혼합)"
-                />
-                <input
-                  className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
-                  style={{ height: "52px" }}
-                  value={origin}
-                  onChange={(e) => setOrigin(e.target.value)}
-                  placeholder="원산지 (예: 국내산, 중국산)"
-                />
-                <input
-                  className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
-                  style={{ height: "52px" }}
-                  value={storageCondition}
-                  onChange={(e) => setStorageCondition(e.target.value)}
-                  placeholder="보관조건 · 유통기한 (예: 냉동보관, 소비기한 5일)"
-                />
+                <div>
+                  <label className="text-xs text-gray500 mb-1 block">포장 단위 (예: 20kg 박스)</label>
+                  <input
+                    className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+                    style={{ height: "52px" }}
+                    value={packageUnit}
+                    onChange={(e) => setPackageUnit(e.target.value)}
+                    placeholder="20kg 박스"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray500 mb-1 block">규격/사이즈 (예: 500ml)</label>
+                  <input
+                    className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+                    style={{ height: "52px" }}
+                    value={spec}
+                    onChange={(e) => setSpec(e.target.value)}
+                    placeholder="500ml, S~L 혼합"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray500 mb-1 block">원산지</label>
+                  <input
+                    className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+                    style={{ height: "52px" }}
+                    value={origin}
+                    onChange={(e) => setOrigin(e.target.value)}
+                    placeholder="국내산, 중국산 등"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray500 mb-1 block">보관조건 · 유통기한</label>
+                  <input
+                    className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+                    style={{ height: "52px" }}
+                    value={storageCondition}
+                    onChange={(e) => setStorageCondition(e.target.value)}
+                    placeholder="냉동보관, 소비기한 5일"
+                  />
+                </div>
               </div>
             </div>
 

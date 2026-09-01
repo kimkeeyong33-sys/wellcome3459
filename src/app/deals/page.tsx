@@ -38,7 +38,7 @@ function DealsPageInner() {
       const { data, error } = await supabase
         .from("deals")
         .select(
-          "id, title, deal_price, original_price, total_qty, remaining_qty, closes_at, location, images, video_url, categories(name), regions(name)"
+          "id, title, deal_price, original_price, total_qty, remaining_qty, quantity_unit, closes_at, location, images, video_url, categories(name), regions(name)"
         )
         .eq("status", "active")
         .gt("closes_at", new Date().toISOString()) // 마감 지난 매물은 애초에 가져오지 않음
@@ -56,6 +56,7 @@ function DealsPageInner() {
             deal_price: d.deal_price,
             total_qty: d.total_qty,
             remaining_qty: d.remaining_qty,
+            quantity_unit: d.quantity_unit ?? "개",
             closes_at: d.closes_at,
             images: d.images ?? [],
             video_url: d.video_url ?? null,
@@ -73,7 +74,7 @@ function DealsPageInner() {
       const { data, error } = await supabase
         .from("deals")
         .select(
-          "id, title, deal_price, original_price, total_qty, remaining_qty, closes_at, location, images, video_url, categories(name), regions(name)"
+          "id, title, deal_price, original_price, total_qty, remaining_qty, quantity_unit, closes_at, location, images, video_url, categories(name), regions(name)"
         )
         .or(`status.eq.closed,closes_at.lte.${new Date().toISOString()}`)
         .order("closes_at", { ascending: false })
@@ -91,6 +92,7 @@ function DealsPageInner() {
             deal_price: d.deal_price,
             total_qty: d.total_qty,
             remaining_qty: d.remaining_qty,
+            quantity_unit: d.quantity_unit ?? "개",
             closes_at: d.closes_at,
             images: d.images ?? [],
             video_url: d.video_url ?? null,
@@ -312,7 +314,9 @@ function DealsPageInner() {
                 </div>
                 <div className="text-base font-bold text-gray900 mt-2">{d.title}</div>
                 <div className="text-sm text-gray500 mt-1">
-                  {isClosed ? d.location : `잔여 ${d.remaining_qty}개 · ${d.location}`}
+                  {isClosed
+                    ? d.location
+                    : `잔여 ${d.remaining_qty}${d.quantity_unit || "개"} · ${d.location}`}
                 </div>
                 <div className="text-lg font-black mt-2" style={{ color: isClosed ? "#6B7480" : "#0B2540" }}>
                   <span className="text-sm text-gray500 font-normal line-through mr-2">

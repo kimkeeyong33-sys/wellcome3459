@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { mockCategories, mockRegions, categoryIcons } from "@/lib/mockData";
+import { mockCategories, mockRegions, categoryIcons, quantityUnits } from "@/lib/mockData";
 import ImageUploader from "@/components/ImageUploader";
 import VideoUploader from "@/components/VideoUploader";
 import { formatPriceInput, parsePriceInput } from "@/lib/format";
@@ -14,6 +14,8 @@ type SellerRequest = {
   contact_phone: string;
   product_name: string;
   quantity: number;
+  quantity_unit: string | null;
+  min_order_qty: number | null;
   hope_price: number | null;
   hope_duration_hours: number | null;
   description: string | null;
@@ -481,7 +483,8 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
               {[r.company_name, r.contact_name, r.contact_phone].filter(Boolean).join(" · ")}
             </div>
             <div className="text-sm text-gray500 mt-1">
-              수량 {r.quantity}개
+              수량 {r.quantity}{r.quantity_unit || "개"}
+              {r.min_order_qty ? ` (MOQ ${r.min_order_qty}${r.quantity_unit || "개"})` : ""}
               {r.hope_price ? ` · 희망단가 ${r.hope_price.toLocaleString()}원` : ""}
               {r.hope_duration_hours
                 ? ` · 희망 마감 ${
@@ -553,6 +556,8 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
                   region: r.regions?.name ?? mockRegions[0],
                   dealPrice: r.hope_price ?? undefined,
                   totalQty: r.quantity,
+                  quantityUnit: r.quantity_unit ?? undefined,
+                  minOrderQty: r.min_order_qty ?? undefined,
                   images: r.images ?? [],
                   videoUrl: r.video_url ?? undefined,
                   description: r.description ?? "",
@@ -766,6 +771,8 @@ function DealForm({
     region?: string;
     dealPrice?: number;
     totalQty?: number;
+    quantityUnit?: string;
+    minOrderQty?: number;
     images?: string[];
     videoUrl?: string;
     description?: string;
@@ -784,6 +791,10 @@ function DealForm({
   const [originalPrice, setOriginalPrice] = useState("");
   const [dealPrice, setDealPrice] = useState(prefill?.dealPrice ? String(prefill.dealPrice) : "");
   const [totalQty, setTotalQty] = useState(prefill?.totalQty ? String(prefill.totalQty) : "");
+  const [quantityUnit, setQuantityUnit] = useState(prefill?.quantityUnit || quantityUnits[0]);
+  const [minOrderQty, setMinOrderQty] = useState(
+    prefill?.minOrderQty ? String(prefill.minOrderQty) : ""
+  );
   const [location, setLocation] = useState("");
   const [closesInHours, setClosesInHours] = useState(
     prefill?.closesInHours ? String(prefill.closesInHours) : "24"
@@ -817,6 +828,8 @@ function DealForm({
           originalPrice: parsePriceInput(originalPrice),
           dealPrice: parsePriceInput(dealPrice) ?? 0,
           totalQty: Number(totalQty),
+          quantityUnit,
+          minOrderQty: minOrderQty ? Number(minOrderQty) : null,
           location,
           closesAt,
           requestId,
@@ -900,6 +913,7 @@ function DealForm({
           <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray500">원</span>
         </div>
       </div>
+      <p className="text-xs text-gray500 -mt-1.5">창고 출고가 기준이에요 (배송비 별도).</p>
       <div className="flex gap-2">
         <input
           type="number"
@@ -908,17 +922,36 @@ function DealForm({
           value={totalQty}
           onChange={(e) => setTotalQty(e.target.value)}
         />
+        <select
+          className="border-2 border-gray200 rounded-lg px-2 py-2.5 text-sm"
+          style={{ width: "90px" }}
+          value={quantityUnit}
+          onChange={(e) => setQuantityUnit(e.target.value)}
+        >
+          {quantityUnits.map((u) => (
+            <option key={u} value={u}>
+              {u}
+            </option>
+          ))}
+        </select>
         <input
+          type="number"
           className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange"
-          placeholder="지역 상세 (예: 서울 가락동)"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
+          placeholder="MOQ"
+          value={minOrderQty}
+          onChange={(e) => setMinOrderQty(e.target.value)}
         />
       </div>
+      <input
+        className="w-full border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange"
+        placeholder="지역 상세 (예: 서울 가락동)"
+        value={location}
+        onChange={(e) => setLocation(e.target.value)}
+      />
       <div className="flex gap-2">
         <input
           className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange"
-          placeholder="포장 단위 (예: 20kg 박스)"
+          placeholder="포장 단위"
           value={packageUnit}
           onChange={(e) => setPackageUnit(e.target.value)}
         />
@@ -938,7 +971,7 @@ function DealForm({
         />
         <input
           className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange"
-          placeholder="보관조건 · 유통기한"
+          placeholder="보관조건·유통기한"
           value={storageCondition}
           onChange={(e) => setStorageCondition(e.target.value)}
         />

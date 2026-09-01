@@ -17,7 +17,11 @@ export type Deal = {
   origin?: string | null; // 원산지
   spec?: string | null; // 규격/사이즈
   storage_condition?: string | null; // 보관조건 · 유통기한
+  quantity_unit?: string | null; // 수량 단위 (박스/개/kg/톤/팔레트 등) — 없으면 "개"로 표시
+  min_order_qty?: number | null; // 최소주문수량(MOQ)
 };
+
+export const quantityUnits = ["개", "박스", "kg", "톤", "팔레트", "세트"];
 
 const now = Date.now();
 
@@ -37,6 +41,8 @@ export const mockDeals: Deal[] = [
     package_unit: "20kg 박스",
     origin: "국내산 (제주)",
     storage_condition: "냉동보관 · 소비기한 등록일로부터 5일",
+    quantity_unit: "박스",
+    min_order_qty: 5,
   },
   {
     id: "2",
@@ -53,6 +59,8 @@ export const mockDeals: Deal[] = [
     package_unit: "1개입 개별포장 · 50개입 박스",
     origin: "중국",
     spec: "500ml, 지름 7cm x 높이 22cm",
+    quantity_unit: "개",
+    min_order_qty: 50,
   },
   {
     id: "3",

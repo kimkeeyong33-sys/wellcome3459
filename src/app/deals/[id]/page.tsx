@@ -57,7 +57,7 @@ function DealDetailPageInner() {
       const { data } = await supabase
         .from("deals")
         .select(
-          "id, title, deal_price, original_price, total_qty, remaining_qty, closes_at, location, images, video_url, description, status, package_unit, origin, spec, storage_condition, categories(name), regions(name)"
+          "id, title, deal_price, original_price, total_qty, remaining_qty, closes_at, location, images, video_url, description, status, package_unit, origin, spec, storage_condition, quantity_unit, min_order_qty, categories(name), regions(name)"
         )
         .eq("id", params.id)
         .single();
@@ -82,6 +82,8 @@ function DealDetailPageInner() {
           origin: data.origin ?? null,
           spec: data.spec ?? null,
           storage_condition: data.storage_condition ?? null,
+          quantity_unit: data.quantity_unit ?? "개",
+          min_order_qty: data.min_order_qty ?? null,
         });
       }
     })();
@@ -193,7 +195,7 @@ function DealDetailPageInner() {
               className="text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap flex-shrink-0"
               style={{ background: "#F2891F", color: "#fff" }}
             >
-              🔥 소진임박 · {deal.remaining_qty}개 남음
+              🔥 소진임박 · {deal.remaining_qty}{deal.quantity_unit || "개"} 남음
             </div>
           )}
         </div>
@@ -274,12 +276,14 @@ function DealDetailPageInner() {
             {shareCopied ? "링크 복사됨 ✓" : "공유 ↗"}
           </button>
         </div>
+        <p className="text-xs text-gray500 -mt-1">창고 출고가 기준이에요 (배송비 별도).</p>
 
         <div>
           <div className="flex justify-between text-sm text-gray500 mb-1.5">
             <span>잔여 수량</span>
             <span>
-              <b style={{ color: color.text }}>{deal.remaining_qty}</b> / {deal.total_qty}개
+              <b style={{ color: color.text }}>{deal.remaining_qty}</b> / {deal.total_qty}
+              {deal.quantity_unit || "개"}
             </span>
           </div>
           <div className="h-2.5 bg-gray200 rounded-full overflow-hidden">
@@ -288,6 +292,11 @@ function DealDetailPageInner() {
               style={{ width: `${remainPct}%`, background: color.solid }}
             />
           </div>
+          {deal.min_order_qty && (
+            <div className="text-xs text-gray500 mt-1.5">
+              최소주문수량(MOQ) {deal.min_order_qty}{deal.quantity_unit || "개"}부터 구매 가능
+            </div>
+          )}
         </div>
 
         <div className="text-sm text-gray500 border-t border-gray200 pt-4 mt-1">
