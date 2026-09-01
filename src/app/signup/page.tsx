@@ -351,11 +351,12 @@ function SignupPageInner() {
               <input
                 className="w-full border-2 border-gray200 rounded-xl px-4 text-lg outline-none focus:border-orange"
                 style={{ height: "56px" }}
-                placeholder="010-0000-0000 (점핑매니저 연락용)"
+                placeholder="010-0000-0000"
                 inputMode="numeric"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
               />
+              <p className="text-xs text-gray500 mt-1.5">점핑매니저 연락용으로만 사용해요.</p>
             </>
           )}
         </div>
