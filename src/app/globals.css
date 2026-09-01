@@ -46,22 +46,32 @@ body {
   background: #e8622c;
 }
 
-/* 스크롤 가능함을 알려주는 손 모양 힌트 */
+/* 스크롤 가능함을 알려주는 손 모양 힌트 — 아래로 쭉 내려갔다가 다시 올라오는 동작 */
 @keyframes scroll-hint {
-  0%,
-  100% {
-    opacity: 0.25;
-    transform: translateY(0);
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
   }
-  50% {
+  15% {
     opacity: 1;
-    transform: translateY(5px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(18px);
+  }
+  85% {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
   }
 }
 
 .animate-scroll-hint {
   display: inline-block;
-  animation: scroll-hint 1.4s ease-in-out infinite;
+  animation: scroll-hint 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
