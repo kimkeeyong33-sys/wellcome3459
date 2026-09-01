@@ -89,10 +89,10 @@ export default function Home() {
         </div>
 
         <h1 className="font-display text-3xl leading-snug drop-shadow-sm">
-          <span style={{ color: "#F2891F" }}>덤핑매물 최저가</span> 가장 먼저 알려드립니다.
+          <span style={{ color: "#F2891F" }}>덤핑재고,</span> 남보다 먼저 잡으세요.
         </h1>
         <p className="text-white/85 text-base mt-4 leading-relaxed">
-          관심 카테고리와 지역만 등록하면, 시세보다 낮은 매물이 나올 때 기기 알림으로 바로 알려드립니다.
+          전국의 임박·과잉·폐업·재고처분 매물을 찾아 원하는 상품이 나오면 가장 먼저 알려드립니다.
         </p>
 
         {/* 긴급성 — 실제 오늘 등록 건수가 일정 수준 이상일 때만 노출 (빈약한 숫자 노출 방지) */}
