@@ -13,6 +13,10 @@ export type Deal = {
   video_url?: string | null;
   description?: string;
   status?: "active" | "closed";
+  package_unit?: string | null; // 포장 단위 (예: "20kg 박스")
+  origin?: string | null; // 원산지
+  spec?: string | null; // 규격/사이즈
+  storage_condition?: string | null; // 보관조건 · 유통기한
 };
 
 const now = Date.now();
@@ -30,6 +34,9 @@ export const mockDeals: Deal[] = [
     remaining_qty: 12,
     closes_at: new Date(now + 1000 * 60 * 60 * 2.97).toISOString(),
     description: "소비기한 등록일로부터 5일 · 냉동 보관 · 박스당 20kg 균일 포장 · 원산지 증명서 제공 가능",
+    package_unit: "20kg 박스",
+    origin: "국내산 (제주)",
+    storage_condition: "냉동보관 · 소비기한 등록일로부터 5일",
   },
   {
     id: "2",
@@ -43,6 +50,9 @@ export const mockDeals: Deal[] = [
     remaining_qty: 340,
     closes_at: new Date(now + 1000 * 60 * 60 * 11.66).toISOString(),
     description: "박스 및 개별 포장 상태 양호 · 사용 흔적 없는 신품 재고 · KC 인증서 보유",
+    package_unit: "1개입 개별포장 · 50개입 박스",
+    origin: "중국",
+    spec: "500ml, 지름 7cm x 높이 22cm",
   },
   {
     id: "3",

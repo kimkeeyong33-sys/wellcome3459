@@ -25,6 +25,10 @@ export async function POST(req: NextRequest) {
     images,
     videoUrl,
     description,
+    packageUnit,
+    origin,
+    spec,
+    storageCondition,
   } = body;
 
   if (!title || !category || !region || !dealPrice || !totalQty || !closesAt) {
@@ -67,6 +71,10 @@ export async function POST(req: NextRequest) {
       images: images ?? [],
       video_url: videoUrl ?? null,
       description: description || null,
+      package_unit: packageUnit || null,
+      origin: origin || null,
+      spec: spec || null,
+      storage_condition: storageCondition || null,
     })
     .select()
     .single();

@@ -57,7 +57,7 @@ function DealDetailPageInner() {
       const { data } = await supabase
         .from("deals")
         .select(
-          "id, title, deal_price, original_price, total_qty, remaining_qty, closes_at, location, images, video_url, description, status, categories(name), regions(name)"
+          "id, title, deal_price, original_price, total_qty, remaining_qty, closes_at, location, images, video_url, description, status, package_unit, origin, spec, storage_condition, categories(name), regions(name)"
         )
         .eq("id", params.id)
         .single();
@@ -78,6 +78,10 @@ function DealDetailPageInner() {
           video_url: data.video_url ?? null,
           description: data.description ?? "",
           status: data.status ?? "active",
+          package_unit: data.package_unit ?? null,
+          origin: data.origin ?? null,
+          spec: data.spec ?? null,
+          storage_condition: data.storage_condition ?? null,
         });
       }
     })();
@@ -295,6 +299,30 @@ function DealDetailPageInner() {
             <span>카테고리</span>
             <span className="text-gray900 font-medium">{deal.category}</span>
           </div>
+          {deal.package_unit && (
+            <div className="flex justify-between py-1.5">
+              <span>포장 단위</span>
+              <span className="text-gray900 font-medium">{deal.package_unit}</span>
+            </div>
+          )}
+          {deal.spec && (
+            <div className="flex justify-between py-1.5">
+              <span>규격</span>
+              <span className="text-gray900 font-medium">{deal.spec}</span>
+            </div>
+          )}
+          {deal.origin && (
+            <div className="flex justify-between py-1.5">
+              <span>원산지</span>
+              <span className="text-gray900 font-medium">{deal.origin}</span>
+            </div>
+          )}
+          {deal.storage_condition && (
+            <div className="flex justify-between py-1.5">
+              <span>보관조건</span>
+              <span className="text-gray900 font-medium">{deal.storage_condition}</span>
+            </div>
+          )}
         </div>
 
         {deal.description && (

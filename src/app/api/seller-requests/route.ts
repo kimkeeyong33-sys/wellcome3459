@@ -14,6 +14,10 @@ export async function POST(req: NextRequest) {
     hopePrice,
     hopeDurationHours,
     description,
+    packageUnit,
+    origin,
+    spec,
+    storageCondition,
     images,
     videoUrl,
   } = body;
@@ -50,6 +54,10 @@ export async function POST(req: NextRequest) {
     hope_price: hopePrice,
     hope_duration_hours: hopeDurationHours ?? null,
     description,
+    package_unit: packageUnit || null,
+    origin: origin || null,
+    spec: spec || null,
+    storage_condition: storageCondition || null,
     images: images ?? [],
     video_url: videoUrl ?? null,
   });

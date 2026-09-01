@@ -18,6 +18,10 @@ export default function SellPage() {
   const [hopePrice, setHopePrice] = useState("");
   const [hopeDurationHours, setHopeDurationHours] = useState("24");
   const [description, setDescription] = useState("");
+  const [packageUnit, setPackageUnit] = useState("");
+  const [origin, setOrigin] = useState("");
+  const [spec, setSpec] = useState("");
+  const [storageCondition, setStorageCondition] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -47,6 +51,10 @@ export default function SellPage() {
           hopePrice: parsePriceInput(hopePrice) ?? null,
           hopeDurationHours: hopeDurationHours ? Number(hopeDurationHours) : null,
           description,
+          packageUnit: packageUnit || null,
+          origin: origin || null,
+          spec: spec || null,
+          storageCondition: storageCondition || null,
           images,
           videoUrl,
         }),
@@ -275,7 +283,10 @@ export default function SellPage() {
             </div>
 
             <div>
-              <label className="text-sm font-bold text-navy mb-2 block">지역</label>
+              <label className="text-sm font-bold text-navy mb-1 block">재고 위치(지역)</label>
+              <p className="text-xs text-gray500 mb-2">
+                물건이 실제로 있는 지역이에요 — 이 지역 알림을 신청한 회원에게 알림이 가요.
+              </p>
               <div className="grid grid-cols-4 gap-2">
                 {mockRegions.map((r) => (
                   <button
@@ -292,13 +303,47 @@ export default function SellPage() {
             </div>
 
             <div>
+              <label className="text-base font-bold text-navy mb-2 block">상품 상세 스펙</label>
+              <div className="flex flex-col gap-3">
+                <input
+                  className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+                  style={{ height: "52px" }}
+                  value={packageUnit}
+                  onChange={(e) => setPackageUnit(e.target.value)}
+                  placeholder="포장 단위 (예: 20kg 박스, 50개입 박스)"
+                />
+                <input
+                  className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+                  style={{ height: "52px" }}
+                  value={spec}
+                  onChange={(e) => setSpec(e.target.value)}
+                  placeholder="규격/사이즈 (예: 500ml, S~L 혼합)"
+                />
+                <input
+                  className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+                  style={{ height: "52px" }}
+                  value={origin}
+                  onChange={(e) => setOrigin(e.target.value)}
+                  placeholder="원산지 (예: 국내산, 중국산)"
+                />
+                <input
+                  className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+                  style={{ height: "52px" }}
+                  value={storageCondition}
+                  onChange={(e) => setStorageCondition(e.target.value)}
+                  placeholder="보관조건 · 유통기한 (예: 냉동보관, 소비기한 5일)"
+                />
+              </div>
+            </div>
+
+            <div>
               <label className="text-sm font-bold text-navy mb-2 block">추가 설명</label>
               <textarea
                 className="w-full border-2 border-gray200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange"
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="소비기한, 보관상태, 마감 희망일 등"
+                placeholder="그 밖에 알려주실 내용"
               />
             </div>
 

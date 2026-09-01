@@ -133,6 +133,16 @@ update public.categories set name = '전자제품' where name = '전자부품';
 alter table public.seller_requests alter column company_name drop not null;
 alter table public.seller_requests alter column contact_name drop not null;
 
+-- 매물 상세 스펙 (포장 단위·원산지·규격·보관조건) — 구매자 의사결정에 필요한 정보 보강
+alter table public.deals add column if not exists package_unit text;
+alter table public.deals add column if not exists origin text;
+alter table public.deals add column if not exists spec text;
+alter table public.deals add column if not exists storage_condition text;
+alter table public.seller_requests add column if not exists package_unit text;
+alter table public.seller_requests add column if not exists origin text;
+alter table public.seller_requests add column if not exists spec text;
+alter table public.seller_requests add column if not exists storage_condition text;
+
 -- ---------------- RLS (Row Level Security) ----------------
 alter table public.members enable row level security;
 alter table public.member_categories enable row level security;

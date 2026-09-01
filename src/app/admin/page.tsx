@@ -17,6 +17,10 @@ type SellerRequest = {
   hope_price: number | null;
   hope_duration_hours: number | null;
   description: string | null;
+  package_unit: string | null;
+  origin: string | null;
+  spec: string | null;
+  storage_condition: string | null;
   images: string[] | null;
   video_url: string | null;
   categories: { name: string } | null;
@@ -487,6 +491,11 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
                   } 후`
                 : " · 마감시점 협의 필요"}
             </div>
+            {(r.package_unit || r.spec || r.origin || r.storage_condition) && (
+              <div className="text-sm text-gray500 mt-1">
+                {[r.package_unit, r.spec, r.origin, r.storage_condition].filter(Boolean).join(" · ")}
+              </div>
+            )}
             {r.description && (
               <div className="text-sm text-gray500 mt-1 bg-gray100 rounded-lg px-3 py-2">
                 {r.description}
@@ -547,6 +556,10 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
                   images: r.images ?? [],
                   videoUrl: r.video_url ?? undefined,
                   description: r.description ?? "",
+                  packageUnit: r.package_unit ?? "",
+                  origin: r.origin ?? "",
+                  spec: r.spec ?? "",
+                  storageCondition: r.storage_condition ?? "",
                   closesInHours: r.hope_duration_hours ?? undefined,
                 }}
                 requestId={r.id}
@@ -756,6 +769,10 @@ function DealForm({
     images?: string[];
     videoUrl?: string;
     description?: string;
+    packageUnit?: string;
+    origin?: string;
+    spec?: string;
+    storageCondition?: string;
     closesInHours?: number;
   };
   requestId?: string;
@@ -774,6 +791,10 @@ function DealForm({
   const [images, setImages] = useState<string[]>(prefill?.images ?? []);
   const [videoUrl, setVideoUrl] = useState<string | null>(prefill?.videoUrl ?? null);
   const [description, setDescription] = useState(prefill?.description ?? "");
+  const [packageUnit, setPackageUnit] = useState(prefill?.packageUnit ?? "");
+  const [origin, setOrigin] = useState(prefill?.origin ?? "");
+  const [spec, setSpec] = useState(prefill?.spec ?? "");
+  const [storageCondition, setStorageCondition] = useState(prefill?.storageCondition ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -802,6 +823,10 @@ function DealForm({
           images,
           videoUrl,
           description,
+          packageUnit: packageUnit || null,
+          origin: origin || null,
+          spec: spec || null,
+          storageCondition: storageCondition || null,
         }),
       });
       if (!res.ok) throw new Error();
@@ -848,6 +873,9 @@ function DealForm({
           ))}
         </select>
       </div>
+      <p className="text-xs text-gray500 -mt-1.5">
+        지역 = 물건이 있는 곳(알림 매칭 기준), 상세 주소는 아래 입력칸에 따로 적어주세요.
+      </p>
       <div className="flex gap-2">
         <div className="relative flex-1">
           <input
@@ -885,6 +913,34 @@ function DealForm({
           placeholder="지역 상세 (예: 서울 가락동)"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
+        />
+      </div>
+      <div className="flex gap-2">
+        <input
+          className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange"
+          placeholder="포장 단위 (예: 20kg 박스)"
+          value={packageUnit}
+          onChange={(e) => setPackageUnit(e.target.value)}
+        />
+        <input
+          className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange"
+          placeholder="규격/사이즈"
+          value={spec}
+          onChange={(e) => setSpec(e.target.value)}
+        />
+      </div>
+      <div className="flex gap-2">
+        <input
+          className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange"
+          placeholder="원산지"
+          value={origin}
+          onChange={(e) => setOrigin(e.target.value)}
+        />
+        <input
+          className="flex-1 min-w-0 border-2 border-gray200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange"
+          placeholder="보관조건 · 유통기한"
+          value={storageCondition}
+          onChange={(e) => setStorageCondition(e.target.value)}
         />
       </div>
       <div>
