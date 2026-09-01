@@ -35,6 +35,15 @@ type ActiveDeal = {
   regions: { name: string } | null;
 };
 
+type Member = {
+  id: string;
+  phone: string;
+  is_business: boolean;
+  created_at: string;
+  categories: string[];
+  regions: string[];
+};
+
 function isToday(dateStr: string) {
   const d = new Date(dateStr);
   const now = new Date();
@@ -118,6 +127,7 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
   const [buyRequests, setBuyRequests] = useState<BuyRequest[]>([]);
   const [activeDeals, setActiveDeals] = useState<ActiveDeal[]>([]);
   const [interests, setInterests] = useState<Interest[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [openFormFor, setOpenFormFor] = useState<string | "new" | null>(null);
   const [authError, setAuthError] = useState(false);
@@ -141,12 +151,16 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
       fetch("/api/admin/buy-requests", { headers: { "x-admin-key": adminKey } }).then((res) =>
         res.json()
       ),
+      fetch("/api/admin/members", { headers: { "x-admin-key": adminKey } }).then((res) =>
+        res.json()
+      ),
     ])
-      .then(([reqData, dealData, interestData, buyData]) => {
+      .then(([reqData, dealData, interestData, buyData, memberData]) => {
         setRequests(reqData.items ?? []);
         setActiveDeals(dealData.items ?? []);
         setInterests(interestData.items ?? []);
         setBuyRequests(buyData.items ?? []);
+        setMembers(memberData.items ?? []);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -194,8 +208,9 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
       </div>
 
       <div className="px-5 pt-4">
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-5 gap-1.5">
           {[
+            { label: "오늘 신규 가입", value: members.filter((m) => isToday(m.created_at)).length },
             { label: "오늘 등록 매물", value: activeDeals.filter((d) => isToday(d.created_at)).length },
             { label: "오늘 구매희망", value: buyRequests.filter((b) => isToday(b.created_at)).length },
             { label: "미연락 리드", value: interests.filter((i) => !i.contacted).length },
@@ -207,12 +222,49 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
               }).length,
             },
           ].map((stat) => (
-            <div key={stat.label} className="bg-white border border-gray200 rounded-xl px-2 py-3 text-center">
-              <div className="text-lg font-black text-navy">{stat.value}</div>
-              <div className="text-[11px] text-gray500 mt-0.5 leading-tight">{stat.label}</div>
+            <div key={stat.label} className="bg-white border border-gray200 rounded-xl px-1 py-2.5 text-center">
+              <div className="text-base font-black text-navy">{stat.value}</div>
+              <div className="text-[10px] text-gray500 mt-0.5 leading-tight">{stat.label}</div>
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="px-5 pt-4 flex flex-col gap-3">
+        <div className="text-sm font-bold text-gray500">최근 가입 회원 ({members.length}명)</div>
+
+        {!loading && members.length === 0 && (
+          <div className="text-center text-gray500 py-6 text-sm">아직 가입한 회원이 없어요.</div>
+        )}
+        {members.map((m) => (
+          <div key={m.id} className="bg-white border border-gray200 rounded-2xl px-4 py-3.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-base font-bold text-gray900">{m.phone}</div>
+              {m.is_business && (
+                <span
+                  className="text-xs font-bold px-2 py-1 rounded-full flex-shrink-0"
+                  style={{ background: "#EAF0F7", color: "#1B3A5C" }}
+                >
+                  사업자
+                </span>
+              )}
+            </div>
+            <div className="text-sm text-gray500 mt-1">
+              {m.categories.length > 0 ? m.categories.join(", ") : "관심 카테고리 미선택"}
+              {" · "}
+              {m.regions.length > 0 ? m.regions.join(", ") : "관심 지역 미선택"}
+            </div>
+            <div className="text-xs text-gray500 mt-1.5">
+              {new Date(m.created_at).toLocaleString("ko-KR", {
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}{" "}
+              가입
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="px-5 pt-4 flex flex-col gap-3">
