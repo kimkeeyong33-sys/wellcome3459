@@ -11,7 +11,7 @@ import ScrollHint from "@/components/ScrollHint";
 
 const DRAFT_KEY = "dj_signup_draft";
 
-type Draft = { categories: string[]; regions: string[]; isBusiness: boolean };
+type Draft = { categories: string[]; regions: string[]; isBusiness: boolean; companyName: string };
 
 export default function SignupPage() {
   return (
@@ -33,6 +33,7 @@ function SignupPageInner() {
   const [categories, setCategories] = useState<string[]>(["농수축산물", "냉동냉장식품"]);
   const [regions, setRegions] = useState<string[]>(["서울"]);
   const [isBusiness, setIsBusiness] = useState(true);
+  const [companyName, setCompanyName] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [pushStatus, setPushStatus] = useState<"idle" | "granted" | "denied" | "unsupported">(
@@ -54,6 +55,7 @@ function SignupPageInner() {
         setCategories(draft.categories);
         setRegions(draft.regions);
         setIsBusiness(draft.isBusiness);
+        setCompanyName(draft.companyName ?? "");
       }
     } catch {
       // 저장소 접근 불가 환경 — 무시하고 기본값 사용
@@ -95,7 +97,7 @@ function SignupPageInner() {
   const startKakaoLogin = async () => {
     setError(null);
     try {
-      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ categories, regions, isBusiness }));
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ categories, regions, isBusiness, companyName }));
     } catch {
       // 저장소 접근 불가 — 로그인 후 선택값이 초기화될 수 있음
     }
@@ -191,6 +193,7 @@ function SignupPageInner() {
         id: userId,
         phone,
         is_business: isBusiness,
+        company_name: isBusiness && companyName ? companyName : null,
         ref_code: existingMember?.ref_code ?? generateRefCode(),
         ...(referredById ? { referred_by: referredById } : {}),
       });
@@ -356,6 +359,24 @@ function SignupPageInner() {
             />
           </div>
         </button>
+
+        {isBusiness && (
+          <div>
+            <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
+              상호명
+              <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
+                선택
+              </span>
+            </label>
+            <input
+              className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+              style={{ height: "52px" }}
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="예: 웰컴코리아(주)"
+            />
+          </div>
+        )}
 
         <div>
           <label className="text-base font-bold text-navy mb-2 block">

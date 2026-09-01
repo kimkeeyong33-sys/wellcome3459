@@ -45,6 +45,10 @@ type Member = {
   id: string;
   phone: string;
   is_business: boolean;
+  company_name: string | null;
+  nickname: string | null;
+  referrer_phone: string | null;
+  push_subscribed: boolean;
   created_at: string;
   categories: string[];
   regions: string[];
@@ -245,21 +249,41 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
         {members.map((m) => (
           <div key={m.id} className="bg-white border border-gray200 rounded-2xl px-4 py-3.5">
             <div className="flex items-center justify-between gap-2">
-              <div className="text-base font-bold text-gray900">{m.phone}</div>
-              {m.is_business && (
+              <div className="text-base font-bold text-gray900">
+                {m.phone}
+                {m.nickname && <span className="text-sm font-medium text-gray500 ml-1.5">{m.nickname}</span>}
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 <span
-                  className="text-xs font-bold px-2 py-1 rounded-full flex-shrink-0"
-                  style={{ background: "#EAF0F7", color: "#1B3A5C" }}
+                  className="text-xs font-bold px-2 py-1 rounded-full"
+                  style={{
+                    background: m.push_subscribed ? "#E8F8EC" : "#FDEEE8",
+                    color: m.push_subscribed ? "#1D8A44" : "#C2410C",
+                  }}
                 >
-                  사업자
+                  {m.push_subscribed ? "🔔 구독중" : "🔕 미구독"}
                 </span>
-              )}
+                {m.is_business && (
+                  <span
+                    className="text-xs font-bold px-2 py-1 rounded-full"
+                    style={{ background: "#EAF0F7", color: "#1B3A5C" }}
+                  >
+                    사업자
+                  </span>
+                )}
+              </div>
             </div>
+            {m.company_name && (
+              <div className="text-sm font-bold text-navy mt-1">{m.company_name}</div>
+            )}
             <div className="text-sm text-gray500 mt-1">
               {m.categories.length > 0 ? m.categories.join(", ") : "관심 카테고리 미선택"}
               {" · "}
               {m.regions.length > 0 ? m.regions.join(", ") : "관심 지역 미선택"}
             </div>
+            {m.referrer_phone && (
+              <div className="text-xs text-gray500 mt-1">추천인: {m.referrer_phone}</div>
+            )}
             <div className="text-xs text-gray500 mt-1.5">
               {new Date(m.created_at).toLocaleString("ko-KR", {
                 month: "long",

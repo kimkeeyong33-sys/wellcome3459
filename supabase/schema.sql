@@ -149,6 +149,9 @@ alter table public.deals add column if not exists min_order_qty int;
 alter table public.seller_requests add column if not exists quantity_unit text default '개';
 alter table public.seller_requests add column if not exists min_order_qty int;
 
+-- 사업자 회원의 상호명 (관리자 화면 식별용)
+alter table public.members add column if not exists company_name text;
+
 -- ---------------- RLS (Row Level Security) ----------------
 alter table public.members enable row level security;
 alter table public.member_categories enable row level security;
