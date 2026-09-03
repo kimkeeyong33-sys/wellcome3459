@@ -254,8 +254,44 @@ begin
   end if;
 end $$;
 
+-- 프로필 보강(마이페이지 "프로필 완성하기") — 전부 선택 입력, 가입 필수 아님
+-- 상호명은 이미 company_name 컬럼을 사용하므로 여기선 성명·이메일만 추가합니다.
+alter table public.members add column if not exists name text;
+alter table public.members add column if not exists email text;
+
+-- 사업자등록증 첨부 — 비공개 버킷(business-licenses)의 저장 경로만 기록합니다 (공개 URL 아님).
+-- business_verified 컬럼은 위 1번 테이블 정의에 이미 있습니다 (기본 false, 관리자가 검토 후 true로 전환).
+alter table public.members add column if not exists business_license_path text;
+
+-- members_self_update 정책은 컬럼을 구분하지 않아서, 회원이 자기 브라우저에서 직접
+-- Supabase 클라이언트를 호출하면 관리자 검토 없이 스스로 business_verified를 켤 수 있습니다.
+-- "✓ 인증된 사업자" 배지는 반드시 관리자(service_role) 검토를 거쳐야 하므로,
+-- service_role이 아닌 요청이 이 값을 바꾸려 하면 트리거가 조용히 원래 값으로 되돌립니다.
+create or replace function public.protect_business_verified()
+returns trigger as $$
+begin
+  if auth.role() <> 'service_role' and new.business_verified is distinct from old.business_verified then
+    new.business_verified := old.business_verified;
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public;
+
+drop trigger if exists members_protect_business_verified on public.members;
+create trigger members_protect_business_verified
+  before update on public.members
+  for each row execute function public.protect_business_verified();
+
 -- ---------------- Storage (매물 사진 저장용) ----------------
 -- 아래는 SQL Editor가 아니라 Supabase 대시보드 → Storage 메뉴에서 수동으로 설정하세요:
 -- 1. "New bucket" → 이름: deal-images, Public bucket 체크 (누구나 읽기 가능하게)
 -- 2. 업로드는 서버(API 라우트, service_role 키)를 통해서만 이루어지므로 별도 정책 설정은 필요 없습니다.
 -- 3. 짧은 소개 영상도 같은 deal-images 버킷에 함께 저장됩니다 (별도 버킷 생성 불필요).
+
+-- ---------------- Storage (사업자등록증 저장용 — 반드시 비공개) ----------------
+-- 아래도 SQL Editor가 아니라 Supabase 대시보드 → Storage 메뉴에서 수동으로 설정하세요:
+-- 1. "New bucket" → 이름: business-licenses, Public bucket 체크는 반드시 해제(비공개 유지)
+-- 2. 업로드·조회 모두 서버(API 라우트, service_role 키)를 통해서만 이루어집니다.
+--    service_role 키는 RLS를 우회하므로 별도 Storage 정책 설정은 필요 없습니다.
+--    (다만 이 버킷은 절대 "Public bucket"으로 만들지 마세요 — 공개로 설정하면 누구나 URL로 접근할 수 있습니다.)
+-- 3. 조회는 관리자 화면에서 요청할 때마다 만료 시간이 짧은 서명된 URL(signed URL)을 그때그때 생성해서 사용합니다.

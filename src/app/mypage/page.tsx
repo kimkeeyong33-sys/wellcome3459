@@ -7,6 +7,7 @@ import { mockCategories, mockRegions, categoryIcons, categoryColors } from "@/li
 import { formatPrice, formatMemberNo } from "@/lib/format";
 import { generateRefCode } from "@/lib/refCode";
 import Toast, { useToast } from "@/components/Toast";
+import BusinessLicenseUploader from "@/components/BusinessLicenseUploader";
 
 type InterestItem = {
   id: string;
@@ -38,6 +39,14 @@ export default function MyPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [notLoggedIn, setNotLoggedIn] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [businessVerified, setBusinessVerified] = useState(false);
+  const [hasBusinessLicense, setHasBusinessLicense] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
   const { message: toastMessage, showToast } = useToast();
 
   useEffect(() => {
@@ -57,12 +66,17 @@ export default function MyPage() {
 
       const { data: member } = await supabase
         .from("members")
-        .select("phone, ref_code, member_no")
+        .select("phone, ref_code, member_no, company_name, name, email, business_verified, business_license_path")
         .eq("id", userId)
         .single();
       if (member) {
         setPhone(member.phone);
         setMemberNo(member.member_no);
+        setCompanyName(member.company_name ?? "");
+        setFullName(member.name ?? "");
+        setEmail(member.email ?? "");
+        setBusinessVerified(Boolean(member.business_verified));
+        setHasBusinessLicense(Boolean(member.business_license_path));
       }
 
       if (member?.ref_code) {
@@ -105,12 +119,13 @@ export default function MyPage() {
       setInterests((interestRows as unknown as InterestItem[]) ?? []);
 
       const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      if (accessToken) {
+      const sessionToken = sessionData.session?.access_token ?? null;
+      setAccessToken(sessionToken);
+      if (sessionToken) {
         fetch("/api/my-referrals", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accessToken }),
+          body: JSON.stringify({ accessToken: sessionToken }),
         })
           .then((res) => res.json())
           .then((data) => setReferrals(data.items ?? []))
@@ -179,6 +194,30 @@ export default function MyPage() {
     }
   };
 
+  const saveProfile = async () => {
+    if (!supabase) return;
+    setProfileSaving(true);
+    setProfileSaved(false);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      const userId = userData.user.id;
+
+      await supabase
+        .from("members")
+        .update({
+          company_name: companyName || null,
+          name: fullName || null,
+          email: email || null,
+        })
+        .eq("id", userId);
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 2500);
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   if (!isSupabaseConfigured) {
     return (
       <main className="flex flex-col items-center justify-center min-h-screen px-6 text-center">
@@ -235,9 +274,13 @@ export default function MyPage() {
         <div className="text-xs font-bold tracking-widest" style={{ color: "#FFD166" }}>
           내 정보
         </div>
-        <h1 className="font-display text-2xl mt-1.5">{phone || "회원님"}</h1>
+        <div className="text-xs text-white/60 mt-2.5">나의 연락처</div>
+        <h1 className="font-display text-2xl mt-0.5">{phone || "회원님"}</h1>
         {memberNo != null && (
-          <div className="text-sm text-white/70 mt-1 font-mono">{formatMemberNo(memberNo)}</div>
+          <>
+            <div className="text-xs text-white/60 mt-2">회원번호</div>
+            <div className="text-sm text-white/85 font-mono">{formatMemberNo(memberNo)}</div>
+          </>
         )}
       </div>
 
@@ -314,6 +357,83 @@ export default function MyPage() {
         >
           {saving ? "저장 중..." : saved ? "✓ 저장됐어요" : "설정 저장"}
         </button>
+
+        <div className="border-t border-gray200 pt-5 flex flex-col gap-4">
+          <div>
+            <div className="text-sm font-bold text-navy mb-1">프로필 완성하기</div>
+            <p className="text-xs text-gray500 leading-relaxed">
+              채워주시면 점핑매니저가 더 정확하게 도와드려요. 전부 선택 입력이라 지금 안 채워도 괜찮아요.
+            </p>
+          </div>
+
+          <div>
+            <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
+              상호명
+              <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
+                선택
+              </span>
+            </label>
+            <input
+              className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+              style={{ height: "52px" }}
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="예: 웰컴코리아(주)"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
+              성명
+              <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
+                선택
+              </span>
+            </label>
+            <input
+              className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+              style={{ height: "52px" }}
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="담당자 성함"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
+              이메일
+              <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
+                선택
+              </span>
+            </label>
+            <input
+              type="email"
+              className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+              style={{ height: "52px" }}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="example@company.com"
+            />
+          </div>
+
+          <BusinessLicenseUploader
+            accessToken={accessToken}
+            status={businessVerified ? "verified" : hasBusinessLicense ? "pending" : "none"}
+            onUploaded={() => {
+              setHasBusinessLicense(true);
+              setBusinessVerified(false);
+              showToast("업로드됐어요. 확인 후 인증 완료로 전환돼요.");
+            }}
+          />
+
+          <button
+            onClick={saveProfile}
+            disabled={profileSaving}
+            className="font-bold rounded-2xl text-base disabled:opacity-60 border-2 border-gray200 text-navy"
+            style={{ padding: "14px 0" }}
+          >
+            {profileSaving ? "저장 중..." : profileSaved ? "✓ 저장됐어요" : "프로필 저장"}
+          </button>
+        </div>
 
         <div className="border-t border-gray200 pt-5">
           <div className="text-sm font-bold text-navy mb-3">
