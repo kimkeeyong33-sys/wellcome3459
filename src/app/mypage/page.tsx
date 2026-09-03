@@ -6,6 +6,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { mockCategories, mockRegions, categoryIcons, categoryColors } from "@/lib/mockData";
 import { formatPrice } from "@/lib/format";
 import { generateRefCode } from "@/lib/refCode";
+import Toast, { useToast } from "@/components/Toast";
 
 type InterestItem = {
   id: string;
@@ -35,6 +36,7 @@ export default function MyPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [notLoggedIn, setNotLoggedIn] = useState(false);
+  const { message: toastMessage, showToast } = useToast();
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
@@ -375,10 +377,31 @@ export default function MyPage() {
           )}
         </div>
 
+        <div className="border-t border-gray200 pt-5">
+          <button
+            type="button"
+            onClick={() => showToast("개발 중인 기능이에요. 곧 만나보실 수 있어요!")}
+            className="w-full bg-white border border-gray200 rounded-xl px-4 py-3 flex items-center justify-between"
+          >
+            <span className="flex items-center gap-2">
+              <span className="text-xl leading-none">📋</span>
+              <span className="text-sm font-bold text-gray900">견적함</span>
+            </span>
+            <span
+              className="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0"
+              style={{ background: "#F5F6F8", color: "#6B7480" }}
+            >
+              준비중
+            </span>
+          </button>
+        </div>
+
         <Link href="/unsubscribe" className="text-center text-xs text-gray500 underline py-2">
           알림이 필요 없으신가요? 알림 해지 · 탈퇴
         </Link>
       </div>
+
+      <Toast message={toastMessage} />
     </main>
   );
 }
