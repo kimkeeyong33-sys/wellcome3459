@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import BottomNav, { NAV_HEIGHT } from "./BottomNav";
 
@@ -7,6 +8,14 @@ import BottomNav, { NAV_HEIGHT } from "./BottomNav";
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdmin = (pathname ?? "").startsWith("/admin");
+
+  // PWA 설치 배너(beforeinstallprompt)가 뜨려면 서비스워커가 등록돼 있어야 해서,
+  // 회원가입(알림 신청) 완료를 기다리지 않고 첫 방문 때부터 바로 등록해둡니다.
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }, []);
 
   return (
     <>

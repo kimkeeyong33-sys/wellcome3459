@@ -8,6 +8,7 @@ import { mockCategories, mockRegions, categoryIcons, categoryColors } from "@/li
 import { subscribeToPush } from "@/lib/pushClient";
 import { generateRefCode } from "@/lib/refCode";
 import ScrollHint from "@/components/ScrollHint";
+import InstallAppButton from "@/components/InstallAppButton";
 
 const DRAFT_KEY = "dj_signup_draft";
 
@@ -258,6 +259,8 @@ function SignupPageInner() {
       </div>
 
       <div className="flex-1 px-5 py-5 flex flex-col gap-6" style={{ paddingBottom: "108px" }}>
+        <InstallAppButton />
+
         <div
           ref={categoriesRef}
           style={{
