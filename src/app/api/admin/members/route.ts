@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   const { data: members, error } = await supabaseAdmin
     .from("members")
-    .select("id, phone, is_business, company_name, referred_by, created_at")
+    .select("id, phone, is_business, company_name, member_no, referred_by, created_at")
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -81,6 +81,7 @@ export async function GET(req: NextRequest) {
     phone: m.phone,
     is_business: m.is_business,
     company_name: m.company_name,
+    member_no: m.member_no,
     nickname: nicknameByMember[m.id] ?? null,
     referrer_phone: m.referred_by ? referrerPhoneById[m.referred_by] ?? null : null,
     push_subscribed: subscribedMemberIds.has(m.id),

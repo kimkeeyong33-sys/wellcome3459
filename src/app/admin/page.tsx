@@ -5,7 +5,7 @@ import Link from "next/link";
 import { mockCategories, mockRegions, categoryIcons, quantityUnits } from "@/lib/mockData";
 import ImageUploader from "@/components/ImageUploader";
 import VideoUploader from "@/components/VideoUploader";
-import { formatPriceInput, parsePriceInput } from "@/lib/format";
+import { formatPriceInput, parsePriceInput, formatMemberNo } from "@/lib/format";
 
 type SellerRequest = {
   id: string;
@@ -46,6 +46,7 @@ type Member = {
   phone: string;
   is_business: boolean;
   company_name: string | null;
+  member_no: number | null;
   nickname: string | null;
   referrer_phone: string | null;
   push_subscribed: boolean;
@@ -113,7 +114,7 @@ type Interest = {
   completed_amount: number | null;
   created_at: string;
   deals: { id: string; title: string; deal_price: number } | null;
-  members: { phone: string; is_business: boolean } | null;
+  members: { phone: string; is_business: boolean; member_no: number | null } | null;
   phone?: string; // quick_leads(비회원 원클릭 리드)는 members 없이 전화번호만 가짐
   source: "member" | "quick";
 };
@@ -251,6 +252,9 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
             <div className="flex items-center justify-between gap-2">
               <div className="text-base font-bold text-gray900">
                 {m.phone}
+                {m.member_no != null && (
+                  <span className="text-xs font-bold text-gray500 ml-1.5">{formatMemberNo(m.member_no)}</span>
+                )}
                 {m.nickname && <span className="text-sm font-medium text-gray500 ml-1.5">{m.nickname}</span>}
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -384,6 +388,11 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
                 </div>
                 <div className="text-sm text-gray500 mt-0.5">
                   {i.members?.phone ?? i.phone ?? "번호 없음"}
+                  {i.members?.member_no != null && (
+                    <span className="ml-1.5 text-xs font-bold text-gray500">
+                      {formatMemberNo(i.members.member_no)}
+                    </span>
+                  )}
                   {i.members?.is_business && (
                     <span className="ml-1.5 text-xs font-bold text-navy">· 사업자</span>
                   )}

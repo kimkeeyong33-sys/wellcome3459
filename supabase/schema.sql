@@ -233,6 +233,27 @@ alter table public.members add column if not exists referred_by uuid references 
 -- 추천 링크에 UUID 대신 쓸 짧은 코드 (예: "7F3KQ9"). 공유하기 좋게 회원마다 하나씩 부여됩니다.
 alter table public.members add column if not exists ref_code text unique;
 
+-- 회원번호 — 가입 순서대로 자동 증가 (화면에는 "JX-" + 5자리로 표시, src/lib/format.ts의 formatMemberNo 참고)
+create sequence if not exists members_member_no_seq;
+alter table public.members add column if not exists member_no integer;
+update public.members m
+set member_no = sub.rn
+from (
+  select id, row_number() over (order by created_at asc, id asc) as rn
+  from public.members
+  where member_no is null
+) sub
+where m.id = sub.id;
+select setval('members_member_no_seq', coalesce((select max(member_no) from public.members), 0) + 1, false);
+alter table public.members alter column member_no set default nextval('members_member_no_seq');
+alter table public.members alter column member_no set not null;
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'members_member_no_unique') then
+    alter table public.members add constraint members_member_no_unique unique (member_no);
+  end if;
+end $$;
+
 -- ---------------- Storage (매물 사진 저장용) ----------------
 -- 아래는 SQL Editor가 아니라 Supabase 대시보드 → Storage 메뉴에서 수동으로 설정하세요:
 -- 1. "New bucket" → 이름: deal-images, Public bucket 체크 (누구나 읽기 가능하게)
