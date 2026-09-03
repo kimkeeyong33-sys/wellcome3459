@@ -50,6 +50,8 @@ type Member = {
   nickname: string | null;
   referrer_phone: string | null;
   push_subscribed: boolean;
+  business_verified: boolean;
+  has_business_license: boolean;
   created_at: string;
   categories: string[];
   regions: string[];
@@ -114,7 +116,12 @@ type Interest = {
   completed_amount: number | null;
   created_at: string;
   deals: { id: string; title: string; deal_price: number } | null;
-  members: { phone: string; is_business: boolean; member_no: number | null } | null;
+  members: {
+    phone: string;
+    is_business: boolean;
+    member_no: number | null;
+    business_verified: boolean;
+  } | null;
   phone?: string; // quick_leads(비회원 원클릭 리드)는 members 없이 전화번호만 가짐
   source: "member" | "quick";
 };
@@ -142,6 +149,30 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
   const [loading, setLoading] = useState(true);
   const [openFormFor, setOpenFormFor] = useState<string | "new" | null>(null);
   const [authError, setAuthError] = useState(false);
+  const [licenseLoadingId, setLicenseLoadingId] = useState<string | null>(null);
+
+  const viewBusinessLicense = async (memberId: string) => {
+    setLicenseLoadingId(memberId);
+    try {
+      const res = await fetch(`/api/admin/business-license?memberId=${memberId}`, {
+        headers: { "x-admin-key": adminKey },
+      });
+      const data = await res.json();
+      if (data.url) window.open(data.url, "_blank");
+      else alert(data.error || "열람에 실패했어요.");
+    } finally {
+      setLicenseLoadingId(null);
+    }
+  };
+
+  const verifyBusiness = async (memberId: string) => {
+    await fetch("/api/admin/business-license", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+      body: JSON.stringify({ memberId }),
+    });
+    load();
+  };
 
   const load = () => {
     setLoading(true);
@@ -275,10 +306,42 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
                     사업자
                   </span>
                 )}
+                {m.business_verified && (
+                  <span
+                    className="text-xs font-bold px-2 py-1 rounded-full"
+                    style={{ background: "#E8F8EC", color: "#1D8A44" }}
+                  >
+                    ✓ 인증된 사업자
+                  </span>
+                )}
               </div>
             </div>
             {m.company_name && (
               <div className="text-sm font-bold text-navy mt-1">{m.company_name}</div>
+            )}
+            {m.has_business_license && !m.business_verified && (
+              <div className="flex items-center gap-1.5 mt-2">
+                <span
+                  className="text-xs font-bold px-2 py-1 rounded-full flex-shrink-0"
+                  style={{ background: "#FFF6E5", color: "#B45309" }}
+                >
+                  인증 대기중
+                </span>
+                <button
+                  onClick={() => viewBusinessLicense(m.id)}
+                  disabled={licenseLoadingId === m.id}
+                  className="text-xs font-bold rounded-lg px-3 py-1.5 border border-gray200 text-navy disabled:opacity-60"
+                >
+                  {licenseLoadingId === m.id ? "불러오는 중..." : "사업자등록증 보기"}
+                </button>
+                <button
+                  onClick={() => verifyBusiness(m.id)}
+                  className="text-xs font-bold rounded-lg px-3 py-1.5 text-white"
+                  style={{ background: "#0B2540" }}
+                >
+                  인증 완료 처리
+                </button>
+              </div>
             )}
             <div className="text-sm text-gray500 mt-1">
               {m.categories.length > 0 ? m.categories.join(", ") : "관심 카테고리 미선택"}
@@ -395,6 +458,11 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
                   )}
                   {i.members?.is_business && (
                     <span className="ml-1.5 text-xs font-bold text-navy">· 사업자</span>
+                  )}
+                  {i.members?.business_verified && (
+                    <span className="ml-1.5 text-xs font-bold" style={{ color: "#1D8A44" }}>
+                      · ✓ 인증된 사업자
+                    </span>
                   )}
                 </div>
                 <div className="text-xs text-gray500 mt-0.5">

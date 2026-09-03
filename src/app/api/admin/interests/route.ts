@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       supabaseAdmin
         .from("interests")
         .select(
-          "id, contacted, outcome, completed_amount, completed_at, created_at, deals(id, title, deal_price), members(phone, is_business, member_no)"
+          "id, contacted, outcome, completed_amount, completed_at, created_at, deals(id, title, deal_price), members(phone, is_business, member_no, business_verified)"
         )
         .order("created_at", { ascending: false })
         .limit(100),
