@@ -41,3 +41,9 @@ export function parsePriceInput(raw: string) {
   const digits = raw.replace(/[^\d]/g, "");
   return digits ? Number(digits) : undefined;
 }
+
+// 가입 순서 회원번호를 "JX-00042" 형식으로 표시합니다.
+export function formatMemberNo(n: number | null | undefined) {
+  if (n === null || n === undefined) return "";
+  return `JX-${String(n).padStart(5, "0")}`;
+}

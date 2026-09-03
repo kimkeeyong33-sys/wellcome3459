@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { mockCategories, mockRegions, categoryIcons, categoryColors } from "@/lib/mockData";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, formatMemberNo } from "@/lib/format";
 import { generateRefCode } from "@/lib/refCode";
 import Toast, { useToast } from "@/components/Toast";
 
@@ -19,7 +19,7 @@ type InterestItem = {
 };
 
 type ReferralItem = {
-  phone: string;
+  member_no: number | null;
   is_business: boolean;
   created_at: string;
 };
@@ -27,12 +27,14 @@ type ReferralItem = {
 export default function MyPage() {
   const [loading, setLoading] = useState(true);
   const [phone, setPhone] = useState("");
+  const [memberNo, setMemberNo] = useState<number | null>(null);
   const [refCode, setRefCode] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
   const [regions, setRegions] = useState<string[]>([]);
   const [interests, setInterests] = useState<InterestItem[]>([]);
   const [referrals, setReferrals] = useState<ReferralItem[]>([]);
   const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [notLoggedIn, setNotLoggedIn] = useState(false);
@@ -55,10 +57,13 @@ export default function MyPage() {
 
       const { data: member } = await supabase
         .from("members")
-        .select("phone, ref_code")
+        .select("phone, ref_code, member_no")
         .eq("id", userId)
         .single();
-      if (member) setPhone(member.phone);
+      if (member) {
+        setPhone(member.phone);
+        setMemberNo(member.member_no);
+      }
 
       if (member?.ref_code) {
         setRefCode(member.ref_code);
@@ -118,6 +123,28 @@ export default function MyPage() {
 
   const toggle = (list: string[], set: (v: string[]) => void, value: string) => {
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+  };
+
+  const handleShareRefLink = async () => {
+    if (typeof window === "undefined" || !refCode) return;
+    const url = `${window.location.origin}/signup?ref=${refCode}`;
+    const text = `점프엑스 덤핑점핑 - 재고 특가 알림 받아보세요! ${url}`;
+
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: "덤핑점핑", text });
+      } catch {
+        // 사용자가 공유를 취소한 경우 — 무시
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+    } catch {
+      // 클립보드 접근 실패 — 무시
+    }
   };
 
   const save = async () => {
@@ -209,6 +236,9 @@ export default function MyPage() {
           내 정보
         </div>
         <h1 className="font-display text-2xl mt-1.5">{phone || "회원님"}</h1>
+        {memberNo != null && (
+          <div className="text-sm text-white/70 mt-1 font-mono">{formatMemberNo(memberNo)}</div>
+        )}
       </div>
 
       <div className="flex-1 px-5 py-5 flex flex-col gap-6">
@@ -349,6 +379,13 @@ export default function MyPage() {
             >
               {copied ? "복사됨 ✓" : "복사"}
             </button>
+            <button
+              onClick={handleShareRefLink}
+              aria-label="추천 링크 공유"
+              className="font-bold rounded-xl px-4 text-sm whitespace-nowrap flex-shrink-0 border-2 border-gray200 text-navy"
+            >
+              {shared ? "공유됨 ✓" : "공유 ↗"}
+            </button>
           </div>
 
           {referrals.length > 0 && (
@@ -359,7 +396,9 @@ export default function MyPage() {
                   className="flex items-center justify-between bg-white border border-gray200 rounded-xl px-4 py-3"
                 >
                   <div>
-                    <div className="text-sm font-bold text-gray900">{r.phone}</div>
+                    <div className="text-sm font-bold text-gray900">
+                      {r.member_no != null ? formatMemberNo(r.member_no) : "회원번호 없음"}
+                    </div>
                     <div className="text-xs text-gray500 mt-0.5">
                       {new Date(r.created_at).toLocaleDateString("ko-KR")} 가입
                       {r.is_business && " · 사업자"}
