@@ -193,7 +193,7 @@ function SignupPageInner() {
         id: userId,
         phone,
         is_business: isBusiness,
-        company_name: isBusiness && companyName ? companyName : null,
+        company_name: companyName ? companyName : null,
         ref_code: existingMember?.ref_code ?? generateRefCode(),
         ...(referredById ? { referred_by: referredById } : {}),
       });
@@ -258,6 +258,62 @@ function SignupPageInner() {
       </div>
 
       <div className="flex-1 px-5 py-5 flex flex-col gap-6" style={{ paddingBottom: "108px" }}>
+        <div
+          className="rounded-2xl p-5"
+          style={{ background: "linear-gradient(135deg, #FFF7DE, #FFFFFF)", border: "2px solid #FFE49C" }}
+        >
+          <div className="flex items-center gap-1.5 mb-3">
+            <span className="text-base font-bold text-navy">간편 가입</span>
+            <span className="text-xs font-bold text-orange bg-white px-2 py-0.5 rounded-full">
+              가장 빠른 방법
+            </span>
+          </div>
+
+          {!authChecked ? (
+            <div className="text-sm text-gray500 py-3">확인 중...</div>
+          ) : !authUserId ? (
+            <button
+              onClick={startKakaoLogin}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl font-bold"
+              style={{ background: "#FEE500", color: "#3C1E1E", height: "64px", fontSize: "19px" }}
+            >
+              💬 카카오로 3초 만에 시작하기
+            </button>
+          ) : (
+            <>
+              <div
+                className="flex items-center gap-1.5 text-sm font-bold rounded-xl px-4 mb-3"
+                style={{ height: "44px", background: "#E8F8EC", color: "#1D8A44" }}
+              >
+                ✓ 카카오 로그인 완료
+              </div>
+              <input
+                className="w-full border-2 border-gray200 rounded-xl px-4 text-lg outline-none focus:border-orange"
+                style={{ height: "56px" }}
+                placeholder="010-0000-0000"
+                inputMode="numeric"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+              <p className="text-xs text-gray500 mt-1.5">점핑매니저 연락용으로만 사용해요.</p>
+
+              <div className="mt-4">
+                <label className="text-sm font-bold text-navy mb-2 block">업체명 (선택)</label>
+                <input
+                  className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+                  style={{ height: "52px" }}
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="예: 웰컴코리아(주)"
+                />
+                <p className="text-xs text-gray500 mt-1.5">
+                  입력하시면 점핑매니저가 더 빠르게 도와드려요
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+
         <div
           ref={categoriesRef}
           style={{
@@ -359,63 +415,6 @@ function SignupPageInner() {
             />
           </div>
         </button>
-
-        {isBusiness && (
-          <div>
-            <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
-              상호명
-              <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
-                선택
-              </span>
-            </label>
-            <input
-              className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
-              style={{ height: "52px" }}
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="예: 웰컴코리아(주)"
-            />
-          </div>
-        )}
-
-        <div>
-          <label className="text-base font-bold text-navy mb-2 block">
-            간편 로그인
-            <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full ml-1.5">
-              마지막 단계
-            </span>
-          </label>
-
-          {!authChecked ? (
-            <div className="text-sm text-gray500 py-3">확인 중...</div>
-          ) : !authUserId ? (
-            <button
-              onClick={startKakaoLogin}
-              className="w-full flex items-center justify-center gap-2 rounded-xl font-bold text-base"
-              style={{ background: "#FEE500", color: "#3C1E1E", height: "56px" }}
-            >
-              💬 카카오로 3초 가입하기
-            </button>
-          ) : (
-            <>
-              <div
-                className="flex items-center gap-1.5 text-sm font-bold rounded-xl px-4 mb-3"
-                style={{ height: "44px", background: "#E8F8EC", color: "#1D8A44" }}
-              >
-                ✓ 카카오 로그인 완료
-              </div>
-              <input
-                className="w-full border-2 border-gray200 rounded-xl px-4 text-lg outline-none focus:border-orange"
-                style={{ height: "56px" }}
-                placeholder="010-0000-0000"
-                inputMode="numeric"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-              <p className="text-xs text-gray500 mt-1.5">점핑매니저 연락용으로만 사용해요.</p>
-            </>
-          )}
-        </div>
 
         <label className="flex items-start gap-2.5 cursor-pointer">
           <input
