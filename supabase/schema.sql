@@ -263,6 +263,25 @@ alter table public.members add column if not exists email text;
 -- business_verified 컬럼은 위 1번 테이블 정의에 이미 있습니다 (기본 false, 관리자가 검토 후 true로 전환).
 alter table public.members add column if not exists business_license_path text;
 
+-- members_self_update 정책은 컬럼을 구분하지 않아서, 회원이 자기 브라우저에서 직접
+-- Supabase 클라이언트를 호출하면 관리자 검토 없이 스스로 business_verified를 켤 수 있습니다.
+-- "✓ 인증된 사업자" 배지는 반드시 관리자(service_role) 검토를 거쳐야 하므로,
+-- service_role이 아닌 요청이 이 값을 바꾸려 하면 트리거가 조용히 원래 값으로 되돌립니다.
+create or replace function public.protect_business_verified()
+returns trigger as $$
+begin
+  if auth.role() <> 'service_role' and new.business_verified is distinct from old.business_verified then
+    new.business_verified := old.business_verified;
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public;
+
+drop trigger if exists members_protect_business_verified on public.members;
+create trigger members_protect_business_verified
+  before update on public.members
+  for each row execute function public.protect_business_verified();
+
 -- ---------------- Storage (매물 사진 저장용) ----------------
 -- 아래는 SQL Editor가 아니라 Supabase 대시보드 → Storage 메뉴에서 수동으로 설정하세요:
 -- 1. "New bucket" → 이름: deal-images, Public bucket 체크 (누구나 읽기 가능하게)
