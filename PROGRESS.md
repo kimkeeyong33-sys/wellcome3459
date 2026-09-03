@@ -12,11 +12,13 @@ Next.js 16 (App Router) + Supabase + Tailwind CSS v4. 자세한 배포/구조 �
 ## 현재 상태
 
 - 기본 브랜치: `claude/dumping-alert-app-rb20gt`
-- 열려 있는 PR (전부 기본 브랜치로 향함, 아직 병합 안 됨):
-  - PR #2 https://github.com/kimkeeyong33-sys/wellcome3459/pull/2 — 회원가입: 카카오 로그인 상단 배치 + 업체명(선택) 필드
-  - PR #3 https://github.com/kimkeeyong33-sys/wellcome3459/pull/3 — PWA 설치 배너 수정 (서비스워커 즉시 등록 + 회원가입 화면에도 배너)
-  - PR #4 https://github.com/kimkeeyong33-sys/wellcome3459/pull/4 — 회원번호(JX-00042) 추가 + 추천 링크 공유 버튼
-- 병합 완료: PR #1 (마이페이지 "견적함" 메뉴 + Toast 컴포넌트) — 기본 브랜치에 반영됨
+- 열려 있는 PR: 없음
+- 병합 완료 (기본 브랜치에 모두 반영됨):
+  - PR #1 — 마이페이지 "견적함" 메뉴 + Toast 컴포넌트
+  - PR #2 — 회원가입: 카카오 로그인 상단 배치 + 업체명(선택) 필드
+  - PR #3 — PWA 설치 배너 수정 (서비스워커 즉시 등록 + 회원가입 화면에도 배너)
+  - PR #4 — 회원번호(JX-00042) 추가 + 추천 링크 공유 버튼
+  - PR #2와 #3이 `src/app/signup/page.tsx`의 같은 위치를 수정했지만 머지 시 충돌 없이 둘 다 정상 반영됨 (순서: 헤더 → 설치 배너 → 카카오 로그인 카드 → 카테고리 선택)
 - 로컬 git 사용자 정보 설정 완료 (이 저장소 한정): `user.name = kimkeeyong33`, `user.email = wellcomegift@gmail.com`
 
 ## 최근 작업 (이번 세션, 시간순)
@@ -28,8 +30,7 @@ Next.js 16 (App Router) + Supabase + Tailwind CSS v4. 자세한 배포/구조 �
 
 ## 다음에 할 일
 
-- [ ] PR #2, #3, #4 리뷰 후 순서대로(또는 필요에 따라 병합 순서 조정) `claude/dumping-alert-app-rb20gt`로 병합
-- [ ] PR #4 병합 후, 실제 Supabase 프로젝트의 SQL Editor에서 `supabase/schema.sql`의 `member_no` 마이그레이션 블록을 실행해야 회원번호가 실제로 채번되기 시작함 (이 세션엔 연결된 Supabase 프로젝트가 없어 로컬에서 직접 검증하지 못했음 — 실제 가입 흐름에서 번호가 순서대로 잘 채번되는지 배포 후 확인 필요)
+- [ ] 실제 Supabase 프로젝트의 SQL Editor에서 `supabase/schema.sql`의 `member_no` 마이그레이션 블록을 아직 실행 안 했다면 실행해야 회원번호가 실제로 채번되기 시작함 (이 세션엔 연결된 Supabase 프로젝트가 없어 로컬에서 직접 검증하지 못했음 — 실제 가입 흐름에서 번호가 순서대로 잘 채번되는지 배포 후 확인 필요)
 - [ ] "견적함" 실제 기능 기획/개발 (현재는 "준비중" 자리표시자만 있음)
 - [ ] (선택) `Toast.tsx`를 다른 화면에서도 재사용할 만한 곳이 있는지 점검
 
