@@ -1,6 +1,6 @@
 # PROGRESS
 
-마지막 업데이트: 2026-09-03
+마지막 업데이트: 2026-09-04
 
 새 세션을 시작할 때 이 파일을 먼저 읽고, 아래 "다음에 할 일"부터 확인하세요.
 
@@ -15,7 +15,7 @@ Next.js 16 (App Router) + Supabase + Tailwind CSS v4. 자세한 배포/구조 �
 - 열려 있는 PR: 없음
 - 병합 완료 (기본 브랜치에 모두 반영됨): PR #1(견적함 메뉴+Toast), #2(회원가입 카카오 상단배치+업체명), #3(PWA 설치 배너 수정), #4(회원번호+추천 링크 공유), #5(프로필 완성하기+사업자등록증 첨부/인증)
   - PR #2와 #3이 `src/app/signup/page.tsx`의 같은 위치를 수정했지만 머지 시 충돌 없이 둘 다 정상 반영됨 (순서: 헤더 → 설치 배너 → 카카오 로그인 카드 → 카테고리 선택)
-- 로컬 git 사용자 정보 설정 완료 (이 저장소 한정): `user.name = kimkeeyong33`, `user.email = wellcomegift@gmail.com`
+- 로컬 git 사용자 정보 설정 완료 (이 저장소 한정): `user.name = kimkeeyong33-sys`, `user.email = kimkeeyong33@gmail.com` (GitHub 계정 `kimkeeyong33-sys`의 등록 이메일과 일치시킴, 2026-09-04)
 
 ## 최근 작업 (이번 세션, 시간순)
 
@@ -24,6 +24,10 @@ Next.js 16 (App Router) + Supabase + Tailwind CSS v4. 자세한 배포/구조 �
 3. **PWA 설치 배너 버그 수정** — 서비스워커가 회원가입 완료 후에만 등록되던 문제 발견 → `AppShell`에서 첫 로드 시 바로 등록하도록 이동, 회원가입 화면에도 `InstallAppButton` 추가. → PR #3, 병합됨.
 4. **회원번호 + 추천 링크 공유** — `members.member_no`(자동증가, "JX-00042" 표시) 추가, 마이페이지/관리자 화면에 노출, 점핑파트너 목록의 마스킹된 전화번호를 회원번호로 대체. 추천 링크에 `navigator.share` 공유 버튼 추가. → PR #4, 병합됨.
 5. **프로필 완성하기 + 사업자등록증 인증** — 마이페이지에 상호명/성명/이메일(전부 선택) 저장 섹션과 사업자등록증 업로드(비공개 Storage 버킷, `members.business_license_path`) 추가. 업로드하면 "인증 대기중" 상태가 되고, 관리자가 서명 URL로 열람 후 "인증 완료 처리"하면 "✓ 인증된 사업자" 배지가 마이페이지/관리자 회원 목록/리드 목록에 표시됨. 병합 전 최종 점검에서 `members_self_update` RLS가 컬럼을 구분하지 않아 회원이 직접 자기 `business_verified`를 켤 수 있는 구멍을 발견 → `protect_business_verified` 트리거로 service_role이 아닌 변경은 무시하도록 막음. → PR #5, 병합됨.
+
+## 최근 작업 (2026-09-04)
+
+- 커밋 작성자 이메일이 GitHub 계정(`kimkeeyong33-sys`)의 등록 이메일(`kimkeeyong33@gmail.com`)과 다르게 찍혀 있던 최근 커밋 2개(63fd68e, c6053b5)를 `git rebase --exec "git commit --amend --reset-author --no-edit"`로 정정하고 `push --force-with-lease`로 반영. Vercel 대시보드에서 Production Deployment가 정정된 커밋(`d910791`) 기준으로 **Ready** 상태인 것 확인 — 이메일 불일치로 배포가 막혀있던 정황은 없었음.
 
 ## 다음에 할 일
 
