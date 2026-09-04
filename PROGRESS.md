@@ -27,7 +27,7 @@ Next.js 16 (App Router) + Supabase + Tailwind CSS v4. 자세한 배포/구조 �
 
 ## 다음에 할 일
 
-- [ ] **Supabase 대시보드 → Storage에서 `business-licenses` 버킷을 아직 안 만들었다면 직접 생성해야 함** — 반드시 "Public bucket" 체크 해제(비공개 유지). 정책(RLS) 설정은 불필요(서버가 service_role 키로만 접근)
+- [x] Supabase 대시보드 → Storage에 `business-licenses` 버킷 생성 완료 (2026-09-03, 사용자 확인)
 - [ ] 실제 Supabase 프로젝트의 SQL Editor에서 `supabase/schema.sql`의 마이그레이션 블록을 아직 실행 안 했다면 실행 필요 — `member_no`, `name`/`email`/`business_license_path` 컬럼과 `protect_business_verified` 트리거까지 전부 포함 (이 세션엔 연결된 Supabase 프로젝트가 없어 로컬에서 직접 검증하지 못했음)
 - [ ] 위 두 가지가 끝나면, 실제 업로드 → 관리자 열람 → 인증 완료 처리까지 전체 흐름을 한 번 직접 확인해보는 걸 권장
 - [ ] "견적함" 실제 기능 기획/개발 (현재는 "준비중" 자리표시자만 있음)
