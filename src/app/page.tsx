@@ -7,6 +7,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { formatPrice } from "@/lib/format";
 import SplashScreen from "@/components/SplashScreen";
 import InstallAppButton from "@/components/InstallAppButton";
+import KakaoChannelButton from "@/components/KakaoChannelButton";
 import AdSlot from "@/components/AdSlot";
 import ScrollHint from "@/components/ScrollHint";
 
@@ -118,8 +119,9 @@ export default function Home() {
         <ScrollHint />
       </div>
 
-      <div className="px-5 pt-5">
+      <div className="px-5 pt-5 flex flex-col gap-2.5">
         <InstallAppButton />
+        <KakaoChannelButton />
       </div>
 
       <div className="px-5 pt-5">
