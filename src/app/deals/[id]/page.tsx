@@ -31,6 +31,14 @@ function DealDetailPageInner() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
 
+  // JUMP X 인증 브릿지("JUMP X에서 입찰 참여하기") 상태 — 관심있어요(리드 수집)
+  // 흐름과는 완전히 별개라 상태도 분리해뒀습니다.
+  const [memberPhone, setMemberPhone] = useState<string | null>(null);
+  const [showBridgeForm, setShowBridgeForm] = useState(false);
+  const [bridgePhone, setBridgePhone] = useState("");
+  const [bridgeSubmitting, setBridgeSubmitting] = useState(false);
+  const [bridgeError, setBridgeError] = useState<string | null>(null);
+
   const handleShare = async () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
     if (typeof navigator !== "undefined" && navigator.share) {
@@ -49,6 +57,25 @@ function DealDetailPageInner() {
       // 클립보드 접근 실패 — 무시
     }
   };
+
+  // 로그인된 회원이면 members.phone을 미리 가져와서 "JUMP X에서 입찰 참여하기"를
+  // 눌렀을 때 번호를 다시 입력받지 않고 바로 브릿지로 넘어가게 합니다. 이 번호는
+  // 가입 시 본인이 직접 타이핑한 값(OTP 등으로 검증된 값이 아님)이지만, JUMP X
+  // 쪽에서 실제 SMS 인증을 한 번 더 거치므로 안전합니다 — CLAUDE.md 참고.
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      const { data: member } = await supabase
+        .from("members")
+        .select("phone")
+        .eq("id", userData.user.id)
+        .maybeSingle();
+      if (member?.phone) setMemberPhone(member.phone);
+    })();
+  }, []);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
@@ -151,6 +178,50 @@ function DealDetailPageInner() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deal.id]);
+
+  // JUMP X 인증 브릿지: /api/jumpx-bridge가 JUMP X의 티켓 발급 Edge Function을
+  // 서버 간(공유 비밀키) 호출해 1회용 코드를 받아오면, 그 코드로 JUMP X의
+  // /auth/bridge로 이동합니다. 실제 로그인(SMS 인증번호 확인)은 JUMP X 쪽에서
+  // 그대로 이루어져요 — 여기서는 전화번호 입력 단계만 건너뛰게 해줄 뿐입니다.
+  const startJumpXBridge = async (phoneValue: string) => {
+    setBridgeError(null);
+    setBridgeSubmitting(true);
+    try {
+      const res = await fetch("/api/jumpx-bridge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneValue }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body?.url) {
+        setBridgeError(body?.error ?? "연결에 실패했어요. 잠시 후 다시 시도해주세요.");
+        setBridgeSubmitting(false);
+        return;
+      }
+      window.location.href = body.url;
+    } catch {
+      setBridgeError("연결에 실패했어요. 잠시 후 다시 시도해주세요.");
+      setBridgeSubmitting(false);
+    }
+  };
+
+  const handleBridgeClick = () => {
+    if (memberPhone) {
+      startJumpXBridge(memberPhone);
+      return;
+    }
+    setBridgeError(null);
+    setShowBridgeForm(true);
+  };
+
+  const submitBridgePhone = () => {
+    const digits = bridgePhone.replace(/[^0-9]/g, "");
+    if (!/^01[0-9]{7,9}$/.test(digits)) {
+      setBridgeError("휴대폰 번호를 정확히 입력해주세요.");
+      return;
+    }
+    startJumpXBridge(digits);
+  };
 
   return (
     <main className="flex flex-col min-h-screen">
@@ -385,6 +456,46 @@ function DealDetailPageInner() {
                   </span>
                 </div>
               </div>
+            </div>
+
+            <div className="bg-gray100 rounded-2xl p-4 mt-3">
+              <div className="text-sm font-bold text-navy mb-1">지금 바로 입찰하고 싶다면</div>
+              <p className="text-xs text-gray500 mb-3">
+                JUMP X 경매에서 실시간으로 입찰할 수 있어요. 휴대폰 인증번호 한 번이면 바로 참여
+                가능해요.
+              </p>
+
+              {showBridgeForm ? (
+                <div className="flex gap-2">
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={bridgePhone}
+                    onChange={(e) => setBridgePhone(e.target.value)}
+                    placeholder="010-0000-0000"
+                    className="flex-1 min-w-0 border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-navy"
+                    style={{ height: "48px" }}
+                  />
+                  <button
+                    onClick={submitBridgePhone}
+                    disabled={bridgeSubmitting}
+                    className="text-white font-bold rounded-xl px-5 whitespace-nowrap flex-shrink-0 disabled:opacity-60"
+                    style={{ background: "#0B2540" }}
+                  >
+                    {bridgeSubmitting ? "이동 중..." : "이동하기"}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleBridgeClick}
+                  disabled={bridgeSubmitting}
+                  className="w-full text-navy text-center font-bold rounded-xl text-sm border-2 border-navy disabled:opacity-60"
+                  style={{ padding: "12px 0" }}
+                >
+                  {bridgeSubmitting ? "JUMP X로 이동 중..." : "JUMP X에서 입찰 참여하기 →"}
+                </button>
+              )}
+              {bridgeError && <div className="text-xs text-orange font-medium mt-2">{bridgeError}</div>}
             </div>
           </div>
 
