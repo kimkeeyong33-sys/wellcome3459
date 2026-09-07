@@ -22,7 +22,7 @@ export default function KakaoChannelButton() {
       <span className="flex-1 min-w-0">
         <span className="block text-sm font-bold text-navy">카카오톡 채널 추가</span>
         <span className="block text-xs text-gray500 mt-0.5">
-          채팅으로 신규 특가 소식을 가장 빠르게 받아보세요
+          공지사항 · 이벤트 · 서비스 업데이트 소식을 받아보세요
         </span>
       </span>
       <span className="text-gray500 flex-shrink-0">›</span>
