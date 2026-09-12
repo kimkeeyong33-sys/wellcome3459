@@ -7,6 +7,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { formatPrice } from "@/lib/format";
 import SplashScreen from "@/components/SplashScreen";
 import InstallAppButton from "@/components/InstallAppButton";
+import KakaoChannelButton from "@/components/KakaoChannelButton";
 import AdSlot from "@/components/AdSlot";
 import ScrollHint from "@/components/ScrollHint";
 
@@ -118,6 +119,9 @@ export default function Home() {
         <ScrollHint />
       </div>
 
+      {/* 상단은 핵심 전환(회원가입→맞춤 알림)에만 집중 — 카카오톡 채널 추가는
+          같은 "카카오 버튼" 스타일로 나란히 있으면 가입과 중복돼 보여서
+          매물을 먼저 보여준 뒤(아래) 저관여 위치로 옮김. */}
       <div className="px-5 pt-5">
         <InstallAppButton />
       </div>
@@ -217,6 +221,12 @@ export default function Home() {
           )}
         </div>
       )}
+
+      {/* 카카오톡 채널 추가 — 저관여 위치. 매물(가치)을 먼저 보여준 뒤 배치해서
+          상단의 핵심 가입 CTA와 시각적으로 경쟁하지 않게 함. */}
+      <div className="px-5 pt-6">
+        <KakaoChannelButton />
+      </div>
 
       {/* 보조 CTA — 스크롤 영역 안, 메인 CTA는 하단에 고정.
           위계: 둘러보기(텍스트 링크) < 정보성(고스트 pill) < 구매 등록(아웃라인) < 판매 등록(틴트+강조)
