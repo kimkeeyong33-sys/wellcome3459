@@ -36,6 +36,7 @@ function DealDetailPageInner() {
   // JUMP X 인증 브릿지("JUMP X에서 입찰 참여하기") 상태 — 관심있어요(리드 수집)
   // 흐름과는 완전히 별개라 상태도 분리해뒀습니다.
   const [memberPhone, setMemberPhone] = useState<string | null>(null);
+  const [isMember, setIsMember] = useState(false);
   const [showBridgeForm, setShowBridgeForm] = useState(false);
   const [bridgePhone, setBridgePhone] = useState("");
   const [bridgeSubmitting, setBridgeSubmitting] = useState(false);
@@ -70,6 +71,7 @@ function DealDetailPageInner() {
     (async () => {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return;
+      setIsMember(true);
       const { data: member } = await supabase
         .from("members")
         .select("phone")
@@ -474,6 +476,15 @@ function DealDetailPageInner() {
               </p>
 
               {showBridgeForm ? (
+                !isMember ? (
+                  <Link
+                    href={`/signup?returnTo=${encodeURIComponent(`/deals/${deal.id}`)}${ref ? `&ref=${ref}` : ""}`}
+                    className="block w-full text-navy text-center font-bold rounded-xl text-sm border-2 border-navy"
+                    style={{ padding: "12px 0" }}
+                  >
+                    휴대폰 인증하고 입찰 참여하기 →
+                  </Link>
+                ) : (
                 <div className="flex gap-2">
                   <input
                     type="tel"
@@ -493,6 +504,7 @@ function DealDetailPageInner() {
                     {bridgeSubmitting ? "이동 중..." : "이동하기"}
                   </button>
                 </div>
+                )
               ) : (
                 <button
                   onClick={handleBridgeClick}
