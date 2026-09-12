@@ -31,6 +31,7 @@ function DealDetailPageInner() {
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [interestError, setInterestError] = useState<string | null>(null);
 
   // JUMP X 인증 브릿지("JUMP X에서 입찰 참여하기") 상태 — 관심있어요(리드 수집)
   // 흐름과는 완전히 별개라 상태도 분리해뒀습니다.
@@ -124,6 +125,7 @@ function DealDetailPageInner() {
   const color = categoryColors[deal.category] ?? categoryColors["기타"];
 
   const handleInterest = async () => {
+    setInterestError(null);
     if (!isSupabaseConfigured || !supabase) {
       // 데모 모드에서도 실제와 동일한 원클릭 흐름을 보여줍니다.
       setShowQuickForm(true);
@@ -138,11 +140,16 @@ function DealDetailPageInner() {
       return;
     }
 
-    const { error } = await supabase.from("interests").upsert({
-      deal_id: deal.id,
-      member_id: userData.user.id,
-    });
-    if (!error) setInterested(true);
+    const { error } = await supabase.from("interests").upsert(
+      { deal_id: deal.id, member_id: userData.user.id },
+      { onConflict: "deal_id,member_id", ignoreDuplicates: true }
+    );
+    if (!error) {
+      setInterested(true);
+    } else {
+      console.error("interest upsert failed:", error);
+      setInterestError("처리 중 문제가 발생했어요. 새로고침 후 다시 시도해주세요.");
+    }
   };
 
   const submitQuickInterest = async () => {
@@ -539,17 +546,22 @@ function DealDetailPageInner() {
                 </Link>
               </div>
             ) : (
-              <button
-                onClick={handleInterest}
-                disabled={interested}
-                className="w-full text-white text-center font-bold rounded-2xl text-lg disabled:opacity-60"
-                style={{
-                  background: interested ? "#8A8A82" : "linear-gradient(135deg, #D9531E, #F2891F)",
-                  padding: "18px 0",
-                }}
-              >
-                {interested ? "점핑매니저에게 전달됐어요" : "관심있어요 · 점핑매니저 연결"}
-              </button>
+              <>
+                <button
+                  onClick={handleInterest}
+                  disabled={interested}
+                  className="w-full text-white text-center font-bold rounded-2xl text-lg disabled:opacity-60"
+                  style={{
+                    background: interested ? "#8A8A82" : "linear-gradient(135deg, #D9531E, #F2891F)",
+                    padding: "18px 0",
+                  }}
+                >
+                  {interested ? "점핑매니저에게 전달됐어요" : "관심있어요 · 점핑매니저 연결"}
+                </button>
+                {interestError && (
+                  <div className="text-xs text-orange text-center mt-2">{interestError}</div>
+                )}
+              </>
             )}
           </div>
         </>
