@@ -60,27 +60,32 @@ function SignupPageInner() {
   const categoriesRef = useRef<HTMLDivElement>(null);
   const regionsRef = useRef<HTMLDivElement>(null);
 
+  const applySession = (user: { id: string; phone?: string | null } | null | undefined) => {
+    if (user && !user.phone) {
+      // 카카오 로그인 시절 만들어진, 전화번호가 없는 낡은 세션 — 로그아웃시켜
+      // 정상적인 문자 인증 흐름으로 다시 시작하게 합니다.
+      supabase?.auth.signOut();
+      return;
+    }
+    setAuthUserId(user?.id ?? null);
+    if (user?.phone) {
+      setPhone(`0${user.phone.replace(/^\+82/, "")}`);
+    }
+  };
+
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
       setAuthChecked(true);
       return;
     }
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
-        setAuthUserId(data.session.user.id);
-        if (data.session.user.phone) {
-          setPhone(`0${data.session.user.phone.replace(/^\+82/, "")}`);
-        }
-      }
+      applySession(data.session?.user);
       setAuthChecked(true);
     });
     // 인증번호 확인(verifyOtp)이 성공하면 Supabase가 세션을 발급하고, 이 구독이
     // 자동으로 authUserId를 채워줍니다 — handleVerifyOtp에서 따로 세팅할 필요 없음.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthUserId(session?.user.id ?? null);
-      if (session?.user.phone) {
-        setPhone(`0${session.user.phone.replace(/^\+82/, "")}`);
-      }
+      applySession(session?.user);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
