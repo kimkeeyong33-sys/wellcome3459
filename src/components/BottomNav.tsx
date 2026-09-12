@@ -26,6 +26,10 @@ export default function BottomNav() {
     supabase.auth.getSession().then(({ data }) => {
       setIsMember(Boolean(data.session));
     });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsMember(Boolean(session));
+    });
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   const TABS = [...BASE_TABS, isMember ? SHARE_TAB : ALERT_TAB, MY_TAB];
