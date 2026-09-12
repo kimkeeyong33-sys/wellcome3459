@@ -277,9 +277,21 @@ export default function MyPage() {
         <div className="text-xs text-white/60 mt-2.5">나의 연락처</div>
         <h1 className="font-display text-2xl mt-0.5">{phone || "회원님"}</h1>
         {companyName && (
-          <div className="text-sm text-white/85 mt-1">
+          <div className="text-sm text-white/85 mt-1 flex items-center gap-1.5">
             {companyName}
             {fullName && ` · ${fullName}`}
+            {(businessVerified || hasBusinessLicense) && (
+              <span
+                className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                style={
+                  businessVerified
+                    ? { background: "rgba(94,194,106,0.2)", color: "#5EC26A" }
+                    : { background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }
+                }
+              >
+                {businessVerified ? "인증 완료" : "인증 대기중"}
+              </span>
+            )}
           </div>
         )}
         {memberNo != null && (
