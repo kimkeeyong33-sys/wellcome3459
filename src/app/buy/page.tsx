@@ -122,22 +122,22 @@ export default function BuyPage() {
               선택
             </span>
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
             {mockCategories.map((c) => {
               const picked = category === c;
               return (
                 <button
                   key={c}
                   onClick={() => setCategory(picked ? "" : c)}
-                  className="flex flex-col items-center justify-center gap-1 rounded-xl border py-3.5 px-1 text-center"
+                  className="flex-shrink-0 flex items-center gap-1.5 rounded-full border py-2 px-3.5 text-center"
                   style={
                     picked
                       ? { background: "#F2891F", borderColor: "#F2891F", color: "#fff" }
                       : { background: "#F5F6F8", borderColor: "#F5F6F8", color: "#1B3A5C" }
                   }
                 >
-                  <span className="text-2xl leading-none">{categoryIcons[c]}</span>
-                  <span className="text-sm font-bold leading-tight">{c}</span>
+                  <span className="text-lg leading-none">{categoryIcons[c]}</span>
+                  <span className="text-sm font-bold leading-tight whitespace-nowrap">{c}</span>
                 </button>
               );
             })}
