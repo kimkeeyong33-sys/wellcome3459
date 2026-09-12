@@ -66,13 +66,21 @@ function SignupPageInner() {
       return;
     }
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) setAuthUserId(data.session.user.id);
+      if (data.session?.user) {
+        setAuthUserId(data.session.user.id);
+        if (data.session.user.phone) {
+          setPhone(`0${data.session.user.phone.replace(/^\+82/, "")}`);
+        }
+      }
       setAuthChecked(true);
     });
     // 인증번호 확인(verifyOtp)이 성공하면 Supabase가 세션을 발급하고, 이 구독이
     // 자동으로 authUserId를 채워줍니다 — handleVerifyOtp에서 따로 세팅할 필요 없음.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       setAuthUserId(session?.user.id ?? null);
+      if (session?.user.phone) {
+        setPhone(`0${session.user.phone.replace(/^\+82/, "")}`);
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
