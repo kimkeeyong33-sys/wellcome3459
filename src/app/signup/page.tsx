@@ -133,7 +133,7 @@ function SignupPageInner() {
       setError("기기 알림 수신 동의는 필수예요.");
       return;
     }
-    if (categories.length === 0 || regions.length === 0) {
+    if (categories.length === 0) {
       setShowSelectionPrompt(true);
       return;
     }
