@@ -220,14 +220,26 @@ export default function Home() {
 
       {/* 보조 CTA — 스크롤 영역 안, 메인 CTA는 하단에 고정.
           위계: 둘러보기(텍스트 링크) < 정보성(고스트 pill) < 구매 등록(아웃라인) < 판매 등록(틴트+강조)
-          — 판매 등록(공급 유입)이 플랫폼 성립의 병목이라 시각적으로 가장 강조. */}
-      <div className="mt-9 px-5 flex flex-col gap-3" style={{ paddingBottom: "108px" }}>
+          — 판매 등록(공급 유입)이 플랫폼 성립의 병목이라 시각적으로 가장 강조.
+          정보성 pill을 맨 아래 두면 하단 고정 CTA(무료 알림받기, 총 높이 약 160px)에
+          가려질 수 있어 액션 카드보다 위로 옮기고, 안전 여백도 108→132px로 늘림. */}
+      <div className="mt-9 px-5 flex flex-col gap-3" style={{ paddingBottom: "132px" }}>
         <Link
           href="/deals"
           className="text-center text-sm font-bold text-gray500 underline underline-offset-4"
         >
           오늘 등록된 매물 전체 보기 →
         </Link>
+
+        <div className="flex items-center justify-center gap-4 py-3" style={{ borderTop: "1px solid #EEF0F2", borderBottom: "1px solid #EEF0F2" }}>
+          <Link href="/support" className="flex items-center gap-1 text-xs font-bold text-gray500">
+            🏛️ 정부지원금
+          </Link>
+          <span className="text-gray200">|</span>
+          <Link href="/logistics" className="flex items-center gap-1 text-xs font-bold text-gray500">
+            🚚 점핑전국물류
+          </Link>
+        </div>
 
         <Link
           href="/sell"
@@ -253,16 +265,6 @@ export default function Home() {
             <div className="text-xs text-gray500 mt-0.5">구매 희망 등록 →</div>
           </div>
         </Link>
-
-        <div className="flex items-center justify-center gap-4 mt-2 pt-4" style={{ borderTop: "1px solid #EEF0F2" }}>
-          <Link href="/support" className="flex items-center gap-1 text-xs font-bold text-gray500">
-            🏛️ 정부지원금
-          </Link>
-          <span className="text-gray200">|</span>
-          <Link href="/logistics" className="flex items-center gap-1 text-xs font-bold text-gray500">
-            🚚 점핑전국물류
-          </Link>
-        </div>
       </div>
 
       {/* 메인 CTA — 항상 화면 하단에 고정 */}
