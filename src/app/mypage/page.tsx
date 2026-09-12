@@ -137,6 +137,19 @@ export default function MyPage() {
     })();
   }, []);
 
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+    // 공유 시 앱 홍보 문구 대신 실제 특가를 보여주는 게 더 잘 클릭됨
+    supabase
+      .from("deals")
+      .select("title, deal_price")
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => setShareDeal(data));
+  }, []);
+
   const toggle = (list: string[], set: (v: string[]) => void, value: string) => {
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
   };
