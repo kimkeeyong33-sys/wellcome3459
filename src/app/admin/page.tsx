@@ -375,6 +375,7 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
       </div>
 
       <div className="px-5 pt-4">
+        <div className="text-xs font-bold text-gray500 mb-1.5">오늘</div>
         <div className="grid grid-cols-5 gap-1.5">
           {[
             { label: "오늘 신규 가입", value: members.filter((m) => isToday(m.created_at)).length },
@@ -388,6 +389,39 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
                 return remainMs > 0 && remainMs <= 6 * 60 * 60 * 1000;
               }).length,
             },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white border border-gray200 rounded-xl px-1 py-2.5 text-center">
+              <div className="text-base font-black text-navy">{stat.value}</div>
+              <div className="text-[10px] text-gray500 mt-0.5 leading-tight">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-xs font-bold text-gray500 mb-1.5 mt-3">누적 현황</div>
+        <div className="grid grid-cols-5 gap-1.5">
+          {[
+            { label: "전체 회원", value: members.length },
+            { label: "사업자 인증", value: members.filter((m) => m.business_verified).length },
+            {
+              label: "누적 성사금액",
+              value: `${interests
+                .filter((i) => i.outcome === "completed")
+                .reduce((sum, i) => sum + (i.completed_amount ?? 0), 0)
+                .toLocaleString()}원`,
+            },
+            {
+              label: "리드 성사율",
+              value: `${
+                interests.filter((i) => i.outcome !== "pending").length > 0
+                  ? Math.round(
+                      (interests.filter((i) => i.outcome === "completed").length /
+                        interests.filter((i) => i.outcome !== "pending").length) *
+                        100
+                    )
+                  : 0
+              }%`,
+            },
+            { label: "대기중 판매신청", value: requests.length },
           ].map((stat) => (
             <div key={stat.label} className="bg-white border border-gray200 rounded-xl px-1 py-2.5 text-center">
               <div className="text-base font-black text-navy">{stat.value}</div>
