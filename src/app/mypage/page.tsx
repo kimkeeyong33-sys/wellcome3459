@@ -48,6 +48,7 @@ export default function MyPage() {
   const [hasBusinessLicense, setHasBusinessLicense] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
   const { message: toastMessage, showToast } = useToast();
 
   useEffect(() => {
