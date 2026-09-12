@@ -151,10 +151,10 @@ export default function BuyPage() {
               선택
             </span>
           </label>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
             <button
               onClick={() => setRegion("")}
-              className={`text-sm py-2.5 rounded-full border-2 font-bold text-center ${
+              className={`flex-shrink-0 text-sm py-2 px-4 rounded-full border-2 font-bold text-center whitespace-nowrap ${
                 region === "" ? "bg-navy text-white border-navy" : "border-gray200 text-gray500"
               }`}
             >
@@ -164,7 +164,7 @@ export default function BuyPage() {
               <button
                 key={r}
                 onClick={() => setRegion(r)}
-                className={`text-sm py-2.5 rounded-full border-2 font-bold text-center ${
+                className={`flex-shrink-0 text-sm py-2 px-4 rounded-full border-2 font-bold text-center whitespace-nowrap ${
                   region === r ? "bg-navy text-white border-navy" : "border-gray200 text-gray500"
                 }`}
               >
