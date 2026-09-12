@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { mockCategories, mockRegions, categoryIcons, categoryColors } from "@/lib/mockData";
+import { mockCategories, mockRegions, categoryIcons } from "@/lib/mockData";
 import { formatPriceInput, parsePriceInput } from "@/lib/format";
 
 export default function BuyPage() {
@@ -125,7 +125,6 @@ export default function BuyPage() {
           <div className="grid grid-cols-3 gap-2">
             {mockCategories.map((c) => {
               const picked = category === c;
-              const color = categoryColors[c];
               return (
                 <button
                   key={c}
@@ -133,8 +132,8 @@ export default function BuyPage() {
                   className="flex flex-col items-center justify-center gap-1 rounded-xl border py-3.5 px-1 text-center"
                   style={
                     picked
-                      ? { background: color.solid, borderColor: color.solid, color: "#fff" }
-                      : { background: color.bg, borderColor: color.bg, color: color.text }
+                      ? { background: "#F2891F", borderColor: "#F2891F", color: "#fff" }
+                      : { background: "#F5F6F8", borderColor: "#F5F6F8", color: "#1B3A5C" }
                   }
                 >
                   <span className="text-2xl leading-none">{categoryIcons[c]}</span>
