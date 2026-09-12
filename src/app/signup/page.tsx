@@ -191,7 +191,7 @@ function SignupPageInner() {
         .eq("id", userId)
         .maybeSingle();
 
-      await supabase.from("members").upsert({
+      const { error: memberError } = await supabase.from("members").upsert({
         id: userId,
         phone,
         is_business: isBusiness,
@@ -199,6 +199,15 @@ function SignupPageInner() {
         ref_code: existingMember?.ref_code ?? generateRefCode(),
         ...(referredById ? { referred_by: referredById } : {}),
       });
+      if (memberError) {
+        setError(
+          memberError.code === "23505"
+            ? "이미 사용 중인 휴대폰 번호예요. 다른 번호로 시도하거나 고객센터로 문의해주세요."
+            : "가입 처리 중 오류가 발생했어요. 잠시 후 다시 시도해주세요."
+        );
+        setSubmitting(false);
+        return;
+      }
 
       const { data: catRows } = await supabase
         .from("categories")

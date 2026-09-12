@@ -32,6 +32,7 @@ function DealDetailPageInner() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [interestError, setInterestError] = useState<string | null>(null);
+  const [interestNeedsReauth, setInterestNeedsReauth] = useState(false);
 
   // JUMP X 인증 브릿지("JUMP X에서 입찰 참여하기") 상태 — 관심있어요(리드 수집)
   // 흐름과는 완전히 별개라 상태도 분리해뒀습니다.
@@ -150,7 +151,12 @@ function DealDetailPageInner() {
       setInterested(true);
     } else {
       console.error("interest upsert failed:", error);
-      setInterestError(`[디버그] ${error.message} / code:${error.code ?? "-"}`);
+      if (error.code === "23503") {
+        setInterestNeedsReauth(true);
+        setInterestError("계정 정보가 완전하지 않아요. 알림받기를 다시 진행해주세요.");
+      } else {
+        setInterestError("처리 중 문제가 발생했어요. 새로고침 후 다시 시도해주세요.");
+      }
     }
   };
 
@@ -571,7 +577,20 @@ function DealDetailPageInner() {
                   {interested ? "점핑매니저에게 전달됐어요" : "관심있어요 · 점핑매니저 연결"}
                 </button>
                 {interestError && (
-                  <div className="text-xs text-orange text-center mt-2">{interestError}</div>
+                  <div className="text-xs text-orange text-center mt-2">
+                    {interestError}
+                    {interestNeedsReauth && (
+                      <>
+                        {" "}
+                        <Link
+                          href={`/signup?returnTo=${encodeURIComponent(`/deals/${deal.id}`)}`}
+                          className="underline font-bold"
+                        >
+                          인증하기 →
+                        </Link>
+                      </>
+                    )}
+                  </div>
                 )}
               </>
             )}
