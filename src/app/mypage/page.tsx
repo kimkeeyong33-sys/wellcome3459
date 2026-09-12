@@ -25,11 +25,14 @@ type ReferralItem = {
   created_at: string;
 };
 
+type PartnerStatus = "none" | "pending" | "approved" | "rejected";
+
 export default function MyPage() {
   const [loading, setLoading] = useState(true);
   const [phone, setPhone] = useState("");
   const [memberNo, setMemberNo] = useState<number | null>(null);
   const [refCode, setRefCode] = useState("");
+  const [memberId, setMemberId] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [regions, setRegions] = useState<string[]>([]);
   const [interests, setInterests] = useState<InterestItem[]>([]);
@@ -49,6 +52,11 @@ export default function MyPage() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [isOfficialPartner, setIsOfficialPartner] = useState(false);
+  const [partnerStatus, setPartnerStatus] = useState<PartnerStatus>("none");
+  const [partnerForm, setPartnerForm] = useState({ businessType: "", channelInfo: "", message: "" });
+  const [partnerSubmitting, setPartnerSubmitting] = useState(false);
+  const [partnerError, setPartnerError] = useState("");
   const { message: toastMessage, showToast } = useToast();
 
   useEffect(() => {
@@ -65,6 +73,7 @@ export default function MyPage() {
         return;
       }
       const userId = userData.user.id;
+      setMemberId(userId);
 
       const { data: member } = await supabase
         .from("members")
@@ -159,6 +168,51 @@ export default function MyPage() {
       .maybeSingle()
       .then(({ data }) => setShareDeal(data));
   }, []);
+
+  useEffect(() => {
+    if (!memberId || !supabase) return;
+    (async () => {
+      const { data: member } = await supabase
+        .from("members")
+        .select("is_official_partner")
+        .eq("id", memberId)
+        .maybeSingle();
+      if (member?.is_official_partner) {
+        setIsOfficialPartner(true);
+        return;
+      }
+      const { data: req } = await supabase
+        .from("partner_requests")
+        .select("status")
+        .eq("member_id", memberId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (req?.status) setPartnerStatus(req.status as PartnerStatus);
+    })();
+  }, [memberId]);
+
+  async function submitPartnerRequest() {
+    if (!memberId || !supabase) return;
+    if (!partnerForm.businessType.trim() || !partnerForm.channelInfo.trim()) {
+      setPartnerError("업종/채널 정보를 입력해주세요.");
+      return;
+    }
+    setPartnerSubmitting(true);
+    setPartnerError("");
+    const { error } = await supabase.from("partner_requests").insert({
+      member_id: memberId,
+      business_type: partnerForm.businessType.trim(),
+      channel_info: partnerForm.channelInfo.trim(),
+      message: partnerForm.message.trim() || null,
+    });
+    setPartnerSubmitting(false);
+    if (error) {
+      setPartnerError("신청 중 오류가 발생했어요. 다시 시도해주세요.");
+      return;
+    }
+    setPartnerStatus("pending");
+  }
 
   const toggle = (list: string[], set: (v: string[]) => void, value: string) => {
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
@@ -610,6 +664,65 @@ export default function MyPage() {
               <p className="text-xs text-gray500 mt-2">거래처 방문 시 QR로 바로 보여주세요</p>
             </div>
           )}
+
+          <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <h3 className="font-bold text-amber-900">🏅 공식 점핑파트너</h3>
+            <p className="mt-1 text-xs leading-relaxed text-amber-800">
+              이미 덤핑·재고 유통업, 도매업, 밴드/카톡채널/블로그 등 SNS 운영자, 대기업 대리점,
+              제조·수입·커뮤니티 운영자로 활동 중이신가요? 공급자이자 수요자 역할을 함께 할 수 있는
+              리더에게 드리는 공식 등급입니다.
+            </p>
+            <ul className="mt-2 space-y-1 text-xs text-amber-800">
+              <li>✓ 공식 파트너 배지 표시</li>
+              <li>✓ 향후 리워드 제도 도입 시 우선 적용</li>
+              <li>✓ 점핑매니저와 우선 연결</li>
+              <li>✓ 내 판매·구매 신청 현황을 마이페이지에서 한 번에 확인</li>
+            </ul>
+
+            {isOfficialPartner ? (
+              <p className="mt-3 rounded-lg bg-amber-100 p-2 text-center text-sm font-semibold text-amber-900">
+                ✅ 공식 점핑파트너입니다
+              </p>
+            ) : partnerStatus === "pending" ? (
+              <p className="mt-3 rounded-lg bg-amber-100 p-2 text-center text-sm text-amber-900">
+                심사 중입니다. 확인 후 연락드릴게요.
+              </p>
+            ) : partnerStatus === "rejected" ? (
+              <p className="mt-3 rounded-lg bg-gray-100 p-2 text-center text-sm text-gray-600">
+                신청이 반려되었어요. 문의는 점핑매니저에게 연락주세요.
+              </p>
+            ) : (
+              <div className="mt-3 space-y-2">
+                <input
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  placeholder="업종/사업형태 (예: 냉동수산물 도매)"
+                  value={partnerForm.businessType}
+                  onChange={(e) => setPartnerForm((f) => ({ ...f, businessType: e.target.value }))}
+                />
+                <input
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  placeholder="채널 정보 (카카오톡 채널/블로그 URL 등)"
+                  value={partnerForm.channelInfo}
+                  onChange={(e) => setPartnerForm((f) => ({ ...f, channelInfo: e.target.value }))}
+                />
+                <textarea
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  rows={2}
+                  placeholder="추가로 전달하고 싶은 내용 (선택)"
+                  value={partnerForm.message}
+                  onChange={(e) => setPartnerForm((f) => ({ ...f, message: e.target.value }))}
+                />
+                {partnerError && <p className="text-xs text-red-600">{partnerError}</p>}
+                <button
+                  onClick={submitPartnerRequest}
+                  disabled={partnerSubmitting}
+                  className="w-full rounded-lg bg-amber-600 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  {partnerSubmitting ? "신청 중..." : "공식 점핑파트너 신청하기"}
+                </button>
+              </div>
+            )}
+          </div>
 
           {referrals.length > 0 && (
             <div className="flex flex-col gap-2 mt-3">

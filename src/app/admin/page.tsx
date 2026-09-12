@@ -29,6 +29,17 @@ type SellerRequest = {
   regions: { name: string } | null;
 };
 
+type PartnerRequest = {
+  id: string;
+  member_id: string;
+  business_type: string;
+  channel_info: string;
+  message: string | null;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  members: { phone: string; company_name: string | null } | null;
+};
+
 type ActiveDeal = {
   id: string;
   title: string;
@@ -172,6 +183,7 @@ type BuyRequest = {
 
 function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: () => void }) {
   const [requests, setRequests] = useState<SellerRequest[]>([]);
+  const [partnerRequests, setPartnerRequests] = useState<PartnerRequest[]>([]);
   const [buyRequests, setBuyRequests] = useState<BuyRequest[]>([]);
   const [activeDeals, setActiveDeals] = useState<ActiveDeal[]>([]);
   const [interests, setInterests] = useState<Interest[]>([]);
@@ -234,6 +246,9 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
       fetch("/api/admin/members", { headers: { "x-admin-key": adminKey } }).then((res) =>
         res.json()
       ),
+      fetch("/api/admin/partner-requests", { headers: { "x-admin-key": adminKey } })
+        .then((r) => r.json())
+        .then((d) => setPartnerRequests(d.items ?? [])),
     ])
       .then(([reqData, dealData, interestData, buyData, memberData]) => {
         setRequests(reqData.items ?? []);
@@ -334,6 +349,15 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
       setBulkProcessing(false);
     }
   };
+
+  async function reviewPartnerRequest(id: string, status: "approved" | "rejected") {
+    await fetch("/api/admin/partner-requests", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+      body: JSON.stringify({ id, status }),
+    });
+    setPartnerRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+  }
 
   if (authError) {
     return (
@@ -935,6 +959,41 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
           </div>
         ))}
       </div>
+
+      <section className="mt-8">
+        <h2 className="text-lg font-bold">
+          🏅 공식 점핑파트너 신청 ({partnerRequests.filter((r) => r.status === "pending").length}건 대기)
+        </h2>
+        <div className="mt-3 space-y-2">
+          {partnerRequests.map((r) => (
+            <div key={r.id} className="rounded-lg border p-3 text-sm">
+              <div className="flex justify-between">
+                <span className="font-semibold">{r.members?.company_name ?? r.members?.phone ?? r.member_id}</span>
+                <span
+                  className={
+                    r.status === "pending" ? "text-amber-600" : r.status === "approved" ? "text-green-600" : "text-gray-400"
+                  }
+                >
+                  {r.status}
+                </span>
+              </div>
+              <p className="mt-1 text-gray-600">업종: {r.business_type}</p>
+              <p className="text-gray-600">채널: {r.channel_info}</p>
+              {r.message && <p className="text-gray-500">메모: {r.message}</p>}
+              {r.status === "pending" && (
+                <div className="mt-2 flex gap-2">
+                  <button onClick={() => reviewPartnerRequest(r.id, "approved")} className="rounded bg-green-600 px-3 py-1 text-xs text-white">
+                    승인
+                  </button>
+                  <button onClick={() => reviewPartnerRequest(r.id, "rejected")} className="rounded bg-gray-400 px-3 py-1 text-xs text-white">
+                    거절
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
 
       <div className="px-5 pb-8 flex flex-col gap-3">
         <div className="text-sm font-bold text-gray500">
