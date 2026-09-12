@@ -19,6 +19,7 @@ export default function DealDetailPage() {
 function DealDetailPageInner() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
+  const ref = searchParams.get("ref"); // 공유 링크로 들어온 추천인 코드 — 정식가입까지 이어줌
   const [deal, setDeal] = useState<Deal>(
     mockDeals.find((d) => d.id === params.id) ?? mockDeals[0]
   );
@@ -423,7 +424,7 @@ function DealDetailPageInner() {
               비슷한 매물이 또 나올 때 가장 먼저 알려드릴게요.
             </p>
             <Link
-              href="/signup"
+              href={ref ? `/signup?ref=${ref}` : "/signup"}
               className="inline-block text-white text-center font-bold rounded-xl text-sm px-6"
               style={{ background: "linear-gradient(135deg, #D9531E, #F2891F)", padding: "12px 24px" }}
             >
@@ -531,7 +532,7 @@ function DealDetailPageInner() {
                 </div>
                 {quickError && <div className="text-xs text-orange font-medium mt-2">{quickError}</div>}
                 <Link
-                  href={`/signup?returnTo=${encodeURIComponent(`/deals/${deal.id}?autoInterest=1`)}`}
+                  href={`/signup?returnTo=${encodeURIComponent(`/deals/${deal.id}?autoInterest=1`)}${ref ? `&ref=${ref}` : ""}`}
                   className="block text-center text-xs text-gray500 underline mt-3"
                 >
                   정식으로 가입하고 알림도 계속 받을래요 →

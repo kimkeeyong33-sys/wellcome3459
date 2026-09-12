@@ -34,7 +34,7 @@ export default function MyPage() {
   const [regions, setRegions] = useState<string[]>([]);
   const [interests, setInterests] = useState<InterestItem[]>([]);
   const [referrals, setReferrals] = useState<ReferralItem[]>([]);
-  const [shareDeal, setShareDeal] = useState<{ title: string; deal_price: number } | null>(null);
+  const [shareDeal, setShareDeal] = useState<{ id: string; title: string; deal_price: number } | null>(null);
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -152,7 +152,7 @@ export default function MyPage() {
     // 공유 시 앱 홍보 문구 대신 실제 특가를 보여주는 게 더 잘 클릭됨
     supabase
       .from("deals")
-      .select("title, deal_price")
+      .select("id, title, deal_price")
       .eq("status", "active")
       .order("created_at", { ascending: false })
       .limit(1)
@@ -164,9 +164,16 @@ export default function MyPage() {
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
   };
 
+  const refUrl =
+    typeof window !== "undefined" && refCode
+      ? shareDeal
+        ? `${window.location.origin}/deals/${shareDeal.id}?ref=${refCode}`
+        : `${window.location.origin}/signup?ref=${refCode}`
+      : "";
+
   const handleShareRefLink = async () => {
     if (typeof window === "undefined" || !refCode) return;
-    const url = `${window.location.origin}/signup?ref=${refCode}`;
+    const url = refUrl;
     const text = shareDeal
       ? `[덤핑점핑] ${shareDeal.title} ${formatPrice(shareDeal.deal_price)} 특가! 이런 재고특가 알림 매일 받아보세요 → ${url}`
       : `점프엑스 덤핑점핑 - 재고 특가 알림 받아보세요! ${url}`;
@@ -571,11 +578,11 @@ export default function MyPage() {
           </p>
           <div className="flex gap-2">
             <div className="flex-1 min-w-0 border-2 border-gray200 rounded-xl px-3.5 flex items-center text-sm text-gray500 truncate" style={{ height: "48px" }}>
-              {typeof window !== "undefined" && refCode ? `${window.location.origin}/signup?ref=${refCode}` : ""}
+              {refUrl}
             </div>
             <button
               onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/signup?ref=${refCode}`);
+                navigator.clipboard.writeText(refUrl);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               }}
@@ -596,9 +603,7 @@ export default function MyPage() {
           {typeof window !== "undefined" && refCode && (
             <div className="flex flex-col items-center mt-4">
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
-                  `${window.location.origin}/signup?ref=${refCode}`
-                )}`}
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(refUrl)}`}
                 alt="추천 링크 QR 코드"
                 className="w-32 h-32 rounded-xl border border-gray200"
               />
