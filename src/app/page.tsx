@@ -131,25 +131,33 @@ export default function Home() {
         {/* 3x3 그리드(약 300px)가 히어로 직후 화면 절반을 차지해 실제 매물 미리보기가
             스크롤 없이 안 보이던 문제 — 가로 스크롤 칩 한 줄로 축소. 카테고리 구분은
             여전히 아이콘 배지 색상만으로(카드 배경은 통일). */}
-        <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-1">
-          {mockCategories.map((c) => {
-            const color = categoryColors[c];
-            return (
-              <Link
-                key={c}
-                href={`/deals?category=${encodeURIComponent(c)}`}
-                className="flex items-center gap-1.5 rounded-full py-2 pl-2 pr-3.5 bg-white border border-gray200 whitespace-nowrap flex-shrink-0 active:scale-95 transition-transform"
-              >
-                <span
-                  className="flex items-center justify-center w-7 h-7 rounded-full text-sm flex-shrink-0"
-                  style={{ background: color.bg }}
+        <div className="relative">
+          <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-1">
+            {mockCategories.map((c) => {
+              const color = categoryColors[c];
+              return (
+                <Link
+                  key={c}
+                  href={`/deals?category=${encodeURIComponent(c)}`}
+                  className="flex items-center gap-1.5 rounded-full py-2 pl-2 pr-3.5 bg-white border border-gray200 whitespace-nowrap flex-shrink-0 active:scale-95 transition-transform"
                 >
-                  {categoryIcons[c]}
-                </span>
-                <span className="text-sm font-bold text-navy">{c}</span>
-              </Link>
-            );
-          })}
+                  <span
+                    className="flex items-center justify-center w-7 h-7 rounded-full text-sm flex-shrink-0"
+                    style={{ background: color.bg }}
+                  >
+                    {categoryIcons[c]}
+                  </span>
+                  <span className="text-sm font-bold text-navy">{c}</span>
+                </Link>
+              );
+            })}
+          </div>
+          {/* 스크롤바를 숨겨놔서(no-scrollbar) 더 있다는 힌트가 없던 문제 —
+              오른쪽 끝에 살짝 페이드 처리해서 "옆으로 더 있다"는 걸 알려줌 */}
+          <div
+            className="pointer-events-none absolute right-0 top-0 bottom-1 w-10"
+            style={{ background: "linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,1))" }}
+          />
         </div>
       </div>
 
