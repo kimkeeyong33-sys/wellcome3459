@@ -150,7 +150,7 @@ function DealDetailPageInner() {
       setInterested(true);
     } else {
       console.error("interest upsert failed:", error);
-      setInterestError("처리 중 문제가 발생했어요. 새로고침 후 다시 시도해주세요.");
+      setInterestError(`[디버그] ${error.message} / code:${error.code ?? "-"}`);
     }
   };
 
