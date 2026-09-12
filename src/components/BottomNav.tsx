@@ -2,19 +2,33 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export const NAV_HEIGHT = 64;
 
-const TABS = [
+const BASE_TABS = [
   { href: "/", label: "홈", icon: "🏠" },
   { href: "/deals", label: "매물", icon: "🔥" },
   { href: "/buy", label: "찾습니다", icon: "🔎" },
-  { href: "/signup", label: "알림", icon: "🔔" },
-  { href: "/mypage", label: "MY", icon: "👤" },
 ];
+
+const ALERT_TAB = { href: "/signup", label: "알림", icon: "🔔" };
+const SHARE_TAB = { href: "/mypage#referral", label: "공유", icon: "🤝" };
+const MY_TAB = { href: "/mypage", label: "MY", icon: "👤" };
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const [isMember, setIsMember] = useState(false);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+    supabase.auth.getSession().then(({ data }) => {
+      setIsMember(Boolean(data.session));
+    });
+  }, []);
+
+  const TABS = [...BASE_TABS, isMember ? SHARE_TAB : ALERT_TAB, MY_TAB];
 
   return (
     <nav
@@ -22,7 +36,7 @@ export default function BottomNav() {
       style={{ height: `${NAV_HEIGHT}px` }}
     >
       {TABS.map((tab) => {
-        const active = tab.href === "/" ? pathname === "/" : (pathname ?? "").startsWith(tab.href);
+        const active = tab.href === "/" ? pathname === "/" : (pathname ?? "").startsWith(tab.href.split("#")[0]);
         return (
           <Link
             key={tab.href}

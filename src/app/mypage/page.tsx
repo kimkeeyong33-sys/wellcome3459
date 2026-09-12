@@ -495,7 +495,7 @@ export default function MyPage() {
           </div>
         </div>
 
-        <div className="border-t border-gray200 pt-5">
+        <div id="referral" className="border-t border-gray200 pt-5">
           <div className="text-sm font-bold text-navy mb-1 flex items-center gap-1.5">
             🤝 점핑파트너
             <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
