@@ -276,6 +276,12 @@ export default function MyPage() {
         </div>
         <div className="text-xs text-white/60 mt-2.5">나의 연락처</div>
         <h1 className="font-display text-2xl mt-0.5">{phone || "회원님"}</h1>
+        {companyName && (
+          <div className="text-sm text-white/85 mt-1">
+            {companyName}
+            {fullName && ` · ${fullName}`}
+          </div>
+        )}
         {memberNo != null && (
           <>
             <div className="text-xs text-white/60 mt-2">회원번호</div>
