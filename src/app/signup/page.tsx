@@ -236,6 +236,25 @@ function SignupPageInner() {
     }
   };
 
+  if (alreadyMember) {
+    return (
+      <main className="flex flex-col items-center justify-center min-h-screen px-6 text-center">
+        <div className="text-4xl mb-4">✅</div>
+        <h1 className="font-display text-xl text-navy mb-2">이미 가입된 번호예요</h1>
+        <p className="text-gray500 text-base leading-relaxed mb-6">
+          카테고리·지역 알림 설정은 마이페이지에서 바꿀 수 있어요.
+        </p>
+        <Link
+          href="/mypage"
+          className="text-white text-center font-bold rounded-2xl text-base px-8"
+          style={{ background: "linear-gradient(135deg, #D9531E, #F2891F)", padding: "14px 32px" }}
+        >
+          마이페이지로 이동
+        </Link>
+      </main>
+    );
+  }
+
   return (
     <main className="flex flex-col min-h-screen">
       <div
