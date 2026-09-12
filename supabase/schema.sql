@@ -282,6 +282,89 @@ create trigger members_protect_business_verified
   before update on public.members
   for each row execute function public.protect_business_verified();
 
+-- ---------------- 카카오 로그인 → 휴대폰 SMS 인증 전환 (OTP 요청 제한) ----------------
+-- 카카오 로그인을 걷어내고 휴대폰 OTP만 쓰기로 하면서(1번 섹션 주석에 적힌 원래
+-- 설계로 복귀), 점프엑스(jumpx-luxury-redesign) schema.sql의 동일 패턴을 이
+-- 프로젝트에 맞게 이식. src/lib/auth.ts의 sendOtp()/verifyOtp()가 사용합니다.
+create table if not exists public.otp_request_log (
+  id uuid primary key default gen_random_uuid(),
+  phone text not null, -- E.164 정규화 형태 (src/lib/auth.ts의 toE164Phone 결과와 동일 규칙)
+  event_type text not null check (event_type in ('REQUEST', 'VERIFY_FAIL', 'VERIFY_SUCCESS')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists otp_request_log_phone_event_time_idx
+  on public.otp_request_log (phone, event_type, created_at desc);
+
+alter table public.otp_request_log enable row level security;
+-- 관리자 화면(/admin)은 service_role 키를 써서 RLS를 우회하므로, 여기서는 일반
+-- 회원(anon/authenticated)에게 아예 노출하지 않습니다 — select 정책을 두지 않음
+-- (다른 신청서 테이블들의 "public_insert만 있고 select 없음" 패턴과 동일).
+
+-- 로그인 전 상태(anon)에서도 호출해야 하므로 grant 대상에 anon 포함.
+-- 정책: 같은 번호로 1분 이내 재요청 금지(COOLDOWN), 최근 1시간 이내 5회 초과
+-- 요청 금지(HOURLY_LIMIT). 두 조건 모두 통과해야 REQUEST 기록을 남기고
+-- allowed=true를 반환합니다 — "검사 통과 = 요청 1건 기록"이 한 트랜잭션에서 원자적으로 일어남.
+create or replace function public.check_and_log_otp_request(p_phone text)
+returns jsonb
+language plpgsql security definer
+set search_path = public
+as $$
+declare
+  v_cooldown constant interval := interval '1 minute';
+  v_window constant interval := interval '1 hour';
+  v_max_per_window constant int := 5;
+  v_last_request timestamptz;
+  v_window_count int;
+  v_oldest_in_window timestamptz;
+begin
+  select max(created_at) into v_last_request
+    from public.otp_request_log
+    where phone = p_phone and event_type = 'REQUEST';
+
+  if v_last_request is not null and now() - v_last_request < v_cooldown then
+    return jsonb_build_object(
+      'allowed', false,
+      'reason', 'COOLDOWN',
+      'retry_after_seconds', ceil(extract(epoch from (v_last_request + v_cooldown - now())))
+    );
+  end if;
+
+  select count(*), min(created_at) into v_window_count, v_oldest_in_window
+    from public.otp_request_log
+    where phone = p_phone and event_type = 'REQUEST' and created_at > now() - v_window;
+
+  if v_window_count >= v_max_per_window then
+    return jsonb_build_object(
+      'allowed', false,
+      'reason', 'HOURLY_LIMIT',
+      'retry_after_seconds', greatest(ceil(extract(epoch from (v_oldest_in_window + v_window - now()))), 0)
+    );
+  end if;
+
+  insert into public.otp_request_log (phone, event_type) values (p_phone, 'REQUEST');
+
+  return jsonb_build_object('allowed', true);
+end;
+$$;
+
+grant execute on function public.check_and_log_otp_request(text) to anon, authenticated;
+
+-- OTP 검증 성공/실패 기록 전용(차단 로직 없음, 이력만 남김). 인증 실패 시점의
+-- 호출자는 아직 로그인 상태가 아닐 수 있어 anon도 호출 가능해야 합니다.
+create or replace function public.log_otp_verify_result(p_phone text, p_success boolean)
+returns void
+language plpgsql security definer
+set search_path = public
+as $$
+begin
+  insert into public.otp_request_log (phone, event_type)
+  values (p_phone, case when p_success then 'VERIFY_SUCCESS' else 'VERIFY_FAIL' end);
+end;
+$$;
+
+grant execute on function public.log_otp_verify_result(text, boolean) to anon, authenticated;
+
 -- ---------------- Storage (매물 사진 저장용) ----------------
 -- 아래는 SQL Editor가 아니라 Supabase 대시보드 → Storage 메뉴에서 수동으로 설정하세요:
 -- 1. "New bucket" → 이름: deal-images, Public bucket 체크 (누구나 읽기 가능하게)

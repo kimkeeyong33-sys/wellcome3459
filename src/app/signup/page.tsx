@@ -4,15 +4,19 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { sendOtp, verifyOtp } from "@/lib/auth";
 import { mockCategories, mockRegions, categoryIcons, categoryColors } from "@/lib/mockData";
 import { subscribeToPush } from "@/lib/pushClient";
 import { generateRefCode } from "@/lib/refCode";
 import ScrollHint from "@/components/ScrollHint";
 import InstallAppButton from "@/components/InstallAppButton";
 
-const DRAFT_KEY = "dj_signup_draft";
-
-type Draft = { categories: string[]; regions: string[]; isBusiness: boolean; companyName: string };
+// "01012345678" -> "010****5678" 형태로 화면에만 일부 가려서 보여줍니다
+function maskPhone(phone: string): string {
+  const digits = phone.replace(/[^0-9]/g, "");
+  if (digits.length < 7) return phone;
+  return `${digits.slice(0, 3)}****${digits.slice(-4)}`;
+}
 
 export default function SignupPage() {
   return (
@@ -31,6 +35,15 @@ function SignupPageInner() {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [phone, setPhone] = useState("");
+
+  // 휴대폰 SMS 인증 2단계 상태 — 카카오 로그인 대신 schema.sql 설계 원안대로
+  // Supabase Auth phone OTP를 직접 씁니다(src/lib/auth.ts 참고).
+  const [otpStep, setOtpStep] = useState<"phone" | "code">("phone");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+
   const [categories, setCategories] = useState<string[]>(["농수축산물", "냉동냉장식품"]);
   const [regions, setRegions] = useState<string[]>(["서울"]);
   const [isBusiness, setIsBusiness] = useState(true);
@@ -46,22 +59,7 @@ function SignupPageInner() {
   const categoriesRef = useRef<HTMLDivElement>(null);
   const regionsRef = useRef<HTMLDivElement>(null);
 
-  // 카카오 로그인은 페이지를 완전히 떠났다 돌아오기 때문에, 그 사이 골라둔
-  // 카테고리·지역 선택이 날아가지 않게 sessionStorage에 잠깐 저장해둡니다.
   useEffect(() => {
-    try {
-      const saved = sessionStorage.getItem(DRAFT_KEY);
-      if (saved) {
-        const draft: Draft = JSON.parse(saved);
-        setCategories(draft.categories);
-        setRegions(draft.regions);
-        setIsBusiness(draft.isBusiness);
-        setCompanyName(draft.companyName ?? "");
-      }
-    } catch {
-      // 저장소 접근 불가 환경 — 무시하고 기본값 사용
-    }
-
     if (!isSupabaseConfigured || !supabase) {
       setAuthChecked(true);
       return;
@@ -70,6 +68,8 @@ function SignupPageInner() {
       if (data.session?.user) setAuthUserId(data.session.user.id);
       setAuthChecked(true);
     });
+    // 인증번호 확인(verifyOtp)이 성공하면 Supabase가 세션을 발급하고, 이 구독이
+    // 자동으로 authUserId를 채워줍니다 — handleVerifyOtp에서 따로 세팅할 필요 없음.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       setAuthUserId(session?.user.id ?? null);
     });
@@ -95,38 +95,34 @@ function SignupPageInner() {
     setTimeout(() => setHighlight(null), 1500);
   };
 
-  const startKakaoLogin = async () => {
-    setError(null);
-    try {
-      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ categories, regions, isBusiness, companyName }));
-    } catch {
-      // 저장소 접근 불가 — 로그인 후 선택값이 초기화될 수 있음
-    }
-
-    if (!isSupabaseConfigured || !supabase) {
-      // 로컬 데모: 실제 로그인 없이 완료된 것처럼 진행
-      setAuthUserId("demo-user");
+  const handleSendOtp = async () => {
+    setOtpError(null);
+    setOtpSending(true);
+    const result = await sendOtp(phone);
+    setOtpSending(false);
+    if (!result.ok) {
+      setOtpError(result.error);
       return;
     }
+    setOtpStep("code");
+  };
 
-    const params = new URLSearchParams();
-    if (returnTo) params.set("returnTo", returnTo);
-    if (refCode) params.set("ref", refCode);
-    const redirectTo = `${window.location.origin}/signup${params.toString() ? `?${params}` : ""}`;
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "kakao",
-      // 이메일은 카카오에 별도 권한 신청이 필요해서, 어차피 안 쓰는 이메일 스코프는 요청하지 않음
-      // (전화번호는 로그인 후 별도로 직접 입력받음)
-      options: { redirectTo, scopes: "profile_nickname profile_image" },
-    });
-    if (error) setError(error.message);
+  const handleVerifyOtp = async () => {
+    setOtpError(null);
+    setOtpVerifying(true);
+    const result = await verifyOtp(phone, otpCode);
+    setOtpVerifying(false);
+    if (!result.ok) {
+      setOtpError(result.error);
+      return;
+    }
+    // authUserId는 위 onAuthStateChange 구독이 세션 발급과 동시에 자동으로 채워줍니다.
   };
 
   const submit = async () => {
     setError(null);
     if (!authUserId) {
-      setError("카카오 로그인을 먼저 진행해주세요.");
+      setError("휴대폰 인증을 먼저 진행해주세요.");
       return;
     }
     if (!/^01[0-9]{8,9}$/.test(phone.replace(/-/g, ""))) {
@@ -149,12 +145,6 @@ function SignupPageInner() {
     if (pushResult.status === "denied") setPushStatus("denied");
     else if (pushResult.status === "unsupported") setPushStatus("unsupported");
     else setPushStatus("granted");
-
-    try {
-      sessionStorage.removeItem(DRAFT_KEY);
-    } catch {
-      // 무시
-    }
 
     if (!isSupabaseConfigured || !supabase) {
       // 데모 모드: 실제 저장 없이 다음 화면으로 이동
@@ -248,7 +238,7 @@ function SignupPageInner() {
           <span className="text-white/70 text-sm tracking-wide">Powered by JumpX</span>
         </div>
         <div className="text-sm font-bold tracking-widest" style={{ color: "#FFD166" }}>
-          3초면 끝나요
+          문자 인증 한 번이면 끝나요
         </div>
         <h1 className="font-display text-2xl mt-2 leading-snug">
           알림 받을 카테고리와
@@ -266,39 +256,94 @@ function SignupPageInner() {
           style={{ background: "linear-gradient(135deg, #FFF7DE, #FFFFFF)", border: "2px solid #FFE49C" }}
         >
           <div className="flex items-center gap-1.5 mb-3">
-            <span className="text-base font-bold text-navy">간편 가입</span>
+            <span className="text-base font-bold text-navy">휴대폰 인증</span>
             <span className="text-xs font-bold text-orange bg-white px-2 py-0.5 rounded-full">
-              가장 빠른 방법
+              문자 인증번호
             </span>
           </div>
 
           {!authChecked ? (
             <div className="text-sm text-gray500 py-3">확인 중...</div>
           ) : !authUserId ? (
-            <button
-              onClick={startKakaoLogin}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl font-bold"
-              style={{ background: "#FEE500", color: "#3C1E1E", height: "64px", fontSize: "19px" }}
-            >
-              💬 카카오로 3초 만에 시작하기
-            </button>
+            otpStep === "phone" ? (
+              <>
+                <input
+                  className="w-full border-2 border-gray200 rounded-xl px-4 text-lg outline-none focus:border-orange"
+                  style={{ height: "56px" }}
+                  placeholder="010-0000-0000"
+                  inputMode="numeric"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+                <p className="text-xs text-gray500 mt-1.5">
+                  점핑매니저 연락 및 알림 계정 확인용으로만 사용해요.
+                </p>
+                {otpError && <p className="text-sm text-orange font-medium mt-2">{otpError}</p>}
+                <button
+                  onClick={handleSendOtp}
+                  disabled={otpSending || phone.length < 9}
+                  className="w-full mt-3 flex items-center justify-center gap-2 rounded-2xl font-bold disabled:opacity-60"
+                  style={{ background: "#F2891F", color: "#fff", height: "56px", fontSize: "17px" }}
+                >
+                  {otpSending ? "발송 중..." : "📱 인증번호 받기"}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray500 mb-2">
+                  {maskPhone(phone)}(으)로 보낸 인증번호를 입력하세요
+                </p>
+                <input
+                  className="w-full border-2 border-gray200 rounded-xl px-4 text-2xl font-mono font-semibold tracking-[0.3em] text-center outline-none focus:border-orange"
+                  style={{ height: "56px" }}
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ""))}
+                  autoFocus
+                />
+                {otpError && <p className="text-sm text-orange font-medium mt-2">{otpError}</p>}
+                <button
+                  onClick={handleVerifyOtp}
+                  disabled={otpVerifying || otpCode.length < 4}
+                  className="w-full mt-3 rounded-2xl font-bold disabled:opacity-60"
+                  style={{ background: "#F2891F", color: "#fff", height: "56px", fontSize: "17px" }}
+                >
+                  {otpVerifying ? "확인 중..." : "인증 확인"}
+                </button>
+                <div className="flex items-center justify-center gap-3 mt-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtpStep("phone");
+                      setOtpCode("");
+                      setOtpError(null);
+                    }}
+                    className="text-xs font-bold text-gray500"
+                  >
+                    번호 다시 입력
+                  </button>
+                  <span className="text-gray200">|</span>
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={otpSending}
+                    className="text-xs font-bold text-gray500 disabled:opacity-60"
+                  >
+                    인증번호 재전송
+                  </button>
+                </div>
+              </>
+            )
           ) : (
             <>
               <div
                 className="flex items-center gap-1.5 text-sm font-bold rounded-xl px-4 mb-3"
                 style={{ height: "44px", background: "#E8F8EC", color: "#1D8A44" }}
               >
-                ✓ 카카오 로그인 완료
+                ✓ 휴대폰 인증 완료 ({maskPhone(phone)})
               </div>
-              <input
-                className="w-full border-2 border-gray200 rounded-xl px-4 text-lg outline-none focus:border-orange"
-                style={{ height: "56px" }}
-                placeholder="010-0000-0000"
-                inputMode="numeric"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-              <p className="text-xs text-gray500 mt-1.5">점핑매니저 연락용으로만 사용해요.</p>
 
               <div className="mt-4">
                 <label className="text-sm font-bold text-navy mb-2 block">업체명 (선택)</label>
