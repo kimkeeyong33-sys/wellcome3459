@@ -20,9 +20,9 @@ export default function KakaoChannelButton() {
         💬
       </span>
       <span className="flex-1 min-w-0">
-        <span className="block text-sm font-bold text-navy">카카오톡 채널 추가</span>
+        <span className="block text-sm font-bold text-navy">카카오톡 채널 추가 · 공지용</span>
         <span className="block text-xs text-gray500 mt-0.5">
-          공지사항 · 이벤트 · 서비스 업데이트 소식을 받아보세요
+          맞춤 특가 알림은 가입 시 자동 설정 · 이건 공지·이벤트 소식용이에요
         </span>
       </span>
       <span className="text-gray500 flex-shrink-0">›</span>
