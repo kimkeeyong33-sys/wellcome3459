@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { sendOtp, verifyOtp } from "@/lib/auth";
-import { mockCategories, mockRegions, categoryIcons, categoryColors } from "@/lib/mockData";
+import { mockCategories, mockRegions, categoryIcons } from "@/lib/mockData";
 import { subscribeToPush } from "@/lib/pushClient";
 import { generateRefCode } from "@/lib/refCode";
 import ScrollHint from "@/components/ScrollHint";
@@ -385,7 +385,6 @@ function SignupPageInner() {
           <div className="grid grid-cols-3 gap-2">
             {mockCategories.map((c) => {
               const picked = categories.includes(c);
-              const color = categoryColors[c];
               return (
                 <button
                   key={c}
@@ -393,8 +392,8 @@ function SignupPageInner() {
                   className="flex flex-col items-center justify-center gap-1 rounded-xl border py-3.5 px-1 text-center"
                   style={
                     picked
-                      ? { background: color.solid, borderColor: color.solid, color: "#fff" }
-                      : { background: color.bg, borderColor: color.bg, color: color.text }
+                      ? { background: "#F2891F", borderColor: "#F2891F", color: "#fff" }
+                      : { background: "#F5F6F8", borderColor: "#F5F6F8", color: "#1B3A5C" }
                   }
                 >
                   <span className="text-2xl leading-none">{categoryIcons[c]}</span>
