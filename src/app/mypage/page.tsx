@@ -139,6 +139,15 @@ export default function MyPage() {
   }, []);
 
   useEffect(() => {
+    if (loading || typeof window === "undefined") return;
+    if (window.location.hash === "#referral") {
+      requestAnimationFrame(() => {
+        document.getElementById("referral")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [loading]);
+
+  useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
     // 공유 시 앱 홍보 문구 대신 실제 특가를 보여주는 게 더 잘 클릭됨
     supabase
