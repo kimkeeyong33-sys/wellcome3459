@@ -540,6 +540,12 @@ function SignupPageInner() {
         className="fixed left-1/2 -translate-x-1/2 w-full max-w-md px-5 pb-6 pt-3 bg-white"
         style={{ boxShadow: "0 -8px 20px rgba(11,37,64,0.08)", bottom: "64px" }}
       >
+        {authUserId && (categories.length === 0 || !agreed) && (
+          <div className="text-xs text-gray500 mb-2 flex flex-col gap-0.5">
+            {categories.length === 0 && <span>○ 관심 카테고리를 선택해주세요</span>}
+            {!agreed && <span>○ 개인정보 처리방침에 동의해주세요</span>}
+          </div>
+        )}
         <button
           onClick={submit}
           disabled={submitting || !authUserId}
