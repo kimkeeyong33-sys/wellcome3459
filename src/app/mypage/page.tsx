@@ -352,6 +352,9 @@ export default function MyPage() {
               {regions.length === mockRegions.length ? "전체 해제" : "전체 선택"}
             </button>
           </label>
+          <p className="text-xs text-gray500 -mt-1 mb-2">
+            선택 안 하면 전국 매물 알림을 다 받아요
+          </p>
           <div className="grid grid-cols-4 gap-2">
             {mockRegions.map((r) => (
               <button
