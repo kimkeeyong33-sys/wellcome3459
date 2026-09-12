@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendDealPush } from "@/lib/sendPush";
-
-function checkAuth(req: NextRequest) {
-  const key = req.headers.get("x-admin-key");
-  return Boolean(process.env.ADMIN_PASSWORD) && key === process.env.ADMIN_PASSWORD;
-}
+import { checkAdminAuth } from "@/lib/adminAuth";
 
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) return NextResponse.json({ error: "인증 실패" }, { status: 401 });
+  const auth = checkAdminAuth(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const body = await req.json();
   const {

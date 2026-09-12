@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-
-function checkAuth(req: NextRequest) {
-  const key = req.headers.get("x-admin-key");
-  return Boolean(process.env.ADMIN_PASSWORD) && key === process.env.ADMIN_PASSWORD;
-}
+import { checkAdminAuth } from "@/lib/adminAuth";
 
 function getAdminClient() {
   return createClient(
@@ -15,7 +11,8 @@ function getAdminClient() {
 
 // 진행 중인 매물 목록 (관리자용 - 재고/마감시간 수정 대상)
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) return NextResponse.json({ error: "인증 실패" }, { status: 401 });
+  const auth = checkAdminAuth(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ items: [], demo: true });
@@ -35,7 +32,8 @@ export async function GET(req: NextRequest) {
 
 // 재고 수량 수정, 마감시간 연장/단축, 조기 마감 처리
 export async function PATCH(req: NextRequest) {
-  if (!checkAuth(req)) return NextResponse.json({ error: "인증 실패" }, { status: 401 });
+  const auth = checkAdminAuth(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const { id, remainingQty, closesAt, status } = await req.json();
   if (!id) return NextResponse.json({ error: "id가 필요합니다." }, { status: 400 });

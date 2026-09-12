@@ -93,12 +93,21 @@ export default function AdminPage() {
   const [input, setInput] = useState("");
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("jumpingbid_admin_key");
-    if (stored) setKey(stored);
+    const stored = sessionStorage.getItem("jumpingbid_admin_session");
+    if (stored) {
+      try {
+        const { key: storedKey, ts } = JSON.parse(stored);
+        const SIX_HOURS = 6 * 60 * 60 * 1000;
+        if (storedKey && Date.now() - ts < SIX_HOURS) setKey(storedKey);
+        else sessionStorage.removeItem("jumpingbid_admin_session");
+      } catch {
+        sessionStorage.removeItem("jumpingbid_admin_session");
+      }
+    }
   }, []);
 
   const login = () => {
-    sessionStorage.setItem("jumpingbid_admin_key", input);
+    sessionStorage.setItem("jumpingbid_admin_session", JSON.stringify({ key: input, ts: Date.now() }));
     setKey(input);
   };
 
@@ -127,7 +136,7 @@ export default function AdminPage() {
     );
   }
 
-  return <AdminDashboard adminKey={key} onLogout={() => { sessionStorage.removeItem("jumpingbid_admin_key"); setKey(null); }} />;
+  return <AdminDashboard adminKey={key} onLogout={() => { sessionStorage.removeItem("jumpingbid_admin_session"); setKey(null); }} />;
 }
 
 type Interest = {
@@ -169,7 +178,7 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [openFormFor, setOpenFormFor] = useState<string | "new" | null>(null);
-  const [authError, setAuthError] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [licenseLoadingId, setLicenseLoadingId] = useState<string | null>(null);
   const [memberSearch, setMemberSearch] = useState("");
   const [memberFilter, setMemberFilter] = useState<"all" | "business" | "subscribed" | "unsubscribed">("all");
@@ -205,9 +214,11 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
     setLoading(true);
     Promise.all([
       fetch("/api/admin/seller-requests", { headers: { "x-admin-key": adminKey } }).then((res) => {
-        if (res.status === 401) {
-          setAuthError(true);
-          throw new Error("unauthorized");
+        if (res.status === 401 || res.status === 429) {
+          return res.json().then((body) => {
+            setAuthError(body?.error ?? "인증에 실패했어요.");
+            throw new Error("unauthorized");
+          });
         }
         return res.json();
       }),
@@ -327,7 +338,7 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
   if (authError) {
     return (
       <main className="flex flex-col items-center justify-center min-h-screen px-6 text-center">
-        <p className="text-orange font-bold mb-3">비밀번호가 올바르지 않아요.</p>
+        <p className="text-orange font-bold mb-3">{authError}</p>
         <button onClick={onLogout} className="text-navy underline text-sm">
           다시 입력하기
         </button>

@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { checkAdminAuth } from "@/lib/adminAuth";
 
 const BUCKET = "business-licenses";
 const SIGNED_URL_TTL_SECONDS = 120;
-
-function checkAuth(req: NextRequest) {
-  const key = req.headers.get("x-admin-key");
-  return Boolean(process.env.ADMIN_PASSWORD) && key === process.env.ADMIN_PASSWORD;
-}
 
 function getAdminClient() {
   return createClient(
@@ -18,7 +14,8 @@ function getAdminClient() {
 
 // 사업자등록증 열람 — 요청할 때마다 만료 시간이 짧은 서명 URL을 새로 발급합니다(공개 URL 없음).
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) return NextResponse.json({ error: "인증 실패" }, { status: 401 });
+  const auth = checkAdminAuth(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const memberId = req.nextUrl.searchParams.get("memberId");
   if (!memberId) return NextResponse.json({ error: "memberId가 필요합니다." }, { status: 400 });
@@ -49,7 +46,8 @@ export async function GET(req: NextRequest) {
 
 // 사업자등록증 확인 후 인증 완료 처리
 export async function PATCH(req: NextRequest) {
-  if (!checkAuth(req)) return NextResponse.json({ error: "인증 실패" }, { status: 401 });
+  const auth = checkAdminAuth(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const { memberId } = await req.json();
   if (!memberId) return NextResponse.json({ error: "memberId가 필요합니다." }, { status: 400 });
