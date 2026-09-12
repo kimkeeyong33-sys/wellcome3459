@@ -36,15 +36,24 @@ export async function sendDealPush(dealId: string) {
     .select("member_id")
     .eq("category_id", deal.category_id);
 
-  const { data: regMembers } = await supabaseAdmin
-    .from("member_regions")
-    .select("member_id")
-    .eq("region_id", deal.region_id);
+  const catMemberIds = (catMembers ?? []).map((m) => m.member_id);
 
-  const catMemberIds = new Set((catMembers ?? []).map((m) => m.member_id));
-  const memberIds = (regMembers ?? [])
-    .map((m) => m.member_id)
-    .filter((id: string) => catMemberIds.has(id));
+  // 지역을 하나도 선택 안 한 회원은 "전국"으로 간주 — member_regions에 행이
+  // 아예 없으면 지역 필터 없이 통과시킵니다. (관심 카테고리 후보로 이미
+  // 좁혀놨으니 이 후보들만 대상으로 region 행을 조회합니다.)
+  const { data: regionRows } = await supabaseAdmin
+    .from("member_regions")
+    .select("member_id, region_id")
+    .in("member_id", catMemberIds.length ? catMemberIds : ["00000000-0000-0000-0000-000000000000"]);
+
+  const membersWithAnyRegion = new Set((regionRows ?? []).map((r) => r.member_id));
+  const regionMatchIds = new Set(
+    (regionRows ?? []).filter((r) => r.region_id === deal.region_id).map((r) => r.member_id)
+  );
+
+  const memberIds = catMemberIds.filter(
+    (id) => regionMatchIds.has(id) || !membersWithAnyRegion.has(id)
+  );
 
   if (memberIds.length === 0) {
     return { sentCount: 0, total: 0 };
