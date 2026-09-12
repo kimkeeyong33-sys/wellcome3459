@@ -399,80 +399,116 @@ export default function MyPage() {
         </button>
 
         <div className="border-t border-gray200 pt-5 flex flex-col gap-4">
-          <div>
-            <div className="text-sm font-bold text-navy mb-1">프로필 완성하기</div>
-            <p className="text-xs text-gray500 leading-relaxed">
-              채워주시면 점핑매니저가 더 정확하게 도와드려요. 전부 선택 입력이라 지금 안 채워도 괜찮아요.
-            </p>
-          </div>
+          {profileComplete && !editingProfile ? (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-bold text-navy">내 정보</div>
+                <button type="button" onClick={() => setEditingProfile(true)} className="text-xs font-bold text-orange">
+                  정보 수정
+                </button>
+              </div>
+              <div className="bg-gray100 rounded-xl px-4 py-3 flex flex-col gap-1">
+                <div className="text-sm font-bold text-navy">
+                  {companyName}
+                  {fullName && ` · ${fullName}`}
+                </div>
+                {email && <div className="text-xs text-gray500">{email}</div>}
+                <span
+                  className="text-xs font-bold px-2 py-0.5 rounded-full self-start mt-1"
+                  style={
+                    businessVerified
+                      ? { background: "rgba(94,194,106,0.15)", color: "#3C9A49" }
+                      : { background: "#EEF0F3", color: "#6B7480" }
+                  }
+                >
+                  {businessVerified ? "사업자 인증 완료" : hasBusinessLicense ? "사업자 인증 대기중" : "사업자 미인증"}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div>
+                <div className="text-sm font-bold text-navy mb-1">프로필 완성하기</div>
+                <p className="text-xs text-gray500 leading-relaxed">
+                  채워주시면 점핑매니저가 더 정확하게 도와드려요. 전부 선택 입력이라 지금 안 채워도 괜찮아요.
+                </p>
+              </div>
 
-          <div>
-            <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
-              상호명
-              <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
-                선택
-              </span>
-            </label>
-            <input
-              className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
-              style={{ height: "52px" }}
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="예: 웰컴코리아(주)"
-            />
-          </div>
+              <div>
+                <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
+                  상호명
+                  <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">선택</span>
+                </label>
+                <input
+                  className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+                  style={{ height: "52px" }}
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="예: 웰컴코리아(주)"
+                />
+              </div>
 
-          <div>
-            <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
-              성명
-              <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
-                선택
-              </span>
-            </label>
-            <input
-              className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
-              style={{ height: "52px" }}
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="담당자 성함"
-            />
-          </div>
+              <div>
+                <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
+                  성명
+                  <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">선택</span>
+                </label>
+                <input
+                  className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+                  style={{ height: "52px" }}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="담당자 성함"
+                />
+              </div>
 
-          <div>
-            <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
-              이메일
-              <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">
-                선택
-              </span>
-            </label>
-            <input
-              type="email"
-              className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
-              style={{ height: "52px" }}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="example@company.com"
-            />
-          </div>
+              <div>
+                <label className="text-sm font-bold text-navy mb-2 flex items-center gap-1.5">
+                  이메일
+                  <span className="text-xs font-medium text-gray500 bg-gray100 px-2 py-0.5 rounded-full">선택</span>
+                </label>
+                <input
+                  type="email"
+                  className="w-full border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
+                  style={{ height: "52px" }}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="example@company.com"
+                />
+              </div>
 
-          <BusinessLicenseUploader
-            accessToken={accessToken}
-            status={businessVerified ? "verified" : hasBusinessLicense ? "pending" : "none"}
-            onUploaded={() => {
-              setHasBusinessLicense(true);
-              setBusinessVerified(false);
-              showToast("업로드됐어요. 확인 후 인증 완료로 전환돼요.");
-            }}
-          />
+              <BusinessLicenseUploader
+                accessToken={accessToken}
+                status={businessVerified ? "verified" : hasBusinessLicense ? "pending" : "none"}
+                onUploaded={() => {
+                  setHasBusinessLicense(true);
+                  setBusinessVerified(false);
+                  showToast("업로드됐어요. 확인 후 인증 완료로 전환돼요.");
+                }}
+              />
 
-          <button
-            onClick={saveProfile}
-            disabled={profileSaving}
-            className="font-bold rounded-2xl text-base disabled:opacity-60 border-2 border-gray200 text-navy"
-            style={{ padding: "14px 0" }}
-          >
-            {profileSaving ? "저장 중..." : profileSaved ? "✓ 저장됐어요" : "프로필 저장"}
-          </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={saveProfile}
+                  disabled={profileSaving}
+                  className="flex-1 font-bold rounded-2xl text-base disabled:opacity-60 border-2 border-gray200 text-navy"
+                  style={{ padding: "14px 0" }}
+                >
+                  {profileSaving ? "저장 중..." : profileSaved ? "✓ 저장됐어요" : "프로필 저장"}
+                </button>
+                {profileComplete && (
+                  <button
+                    type="button"
+                    onClick={() => setEditingProfile(false)}
+                    className="font-bold rounded-2xl text-base border-2 border-gray200 text-gray500"
+                    style={{ padding: "14px 20px" }}
+                  >
+                    취소
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="border-t border-gray200 pt-5">
