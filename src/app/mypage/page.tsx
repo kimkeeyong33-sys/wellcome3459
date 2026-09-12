@@ -229,6 +229,7 @@ export default function MyPage() {
         })
         .eq("id", userId);
       setProfileSaved(true);
+      setEditingProfile(false);
       setTimeout(() => setProfileSaved(false), 2500);
     } finally {
       setProfileSaving(false);
