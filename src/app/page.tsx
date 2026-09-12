@@ -155,7 +155,7 @@ export default function Home() {
               오른쪽 끝에 살짝 페이드 처리해서 "옆으로 더 있다"는 걸 알려줌 */}
           <div
             className="pointer-events-none absolute right-0 top-0 bottom-1 w-10"
-            style={{ background: "linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,1))" }}
+            style={{ background: "linear-gradient(to right, rgba(245,246,248,0), rgba(245,246,248,1))" }}
           />
         </div>
       </div>
