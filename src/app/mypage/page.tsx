@@ -34,6 +34,7 @@ export default function MyPage() {
   const [regions, setRegions] = useState<string[]>([]);
   const [interests, setInterests] = useState<InterestItem[]>([]);
   const [referrals, setReferrals] = useState<ReferralItem[]>([]);
+  const [shareDeal, setShareDeal] = useState<{ title: string; deal_price: number } | null>(null);
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
   const [saving, setSaving] = useState(false);
