@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { mockCategories, mockRegions, categoryIcons, categoryColors } from "@/lib/mockData";
+import { mockCategories, mockRegions, categoryIcons } from "@/lib/mockData";
 import { subscribeToPush } from "@/lib/pushClient";
 import { generateRefCode } from "@/lib/refCode";
 import ScrollHint from "@/components/ScrollHint";
@@ -337,10 +337,11 @@ function SignupPageInner() {
               {categories.length === mockCategories.length ? "전체 해제" : "전체 선택"}
             </button>
           </label>
+          {/* 홈 화면 컬러톤 정리와 통일: 카테고리별 파스텔 대신, 선택 여부만
+              브랜드 오렌지 단색으로 표현 (미선택 = 중성 회색, 선택 = 오렌지) */}
           <div className="grid grid-cols-3 gap-2">
             {mockCategories.map((c) => {
               const picked = categories.includes(c);
-              const color = categoryColors[c];
               return (
                 <button
                   key={c}
@@ -348,8 +349,8 @@ function SignupPageInner() {
                   className="flex flex-col items-center justify-center gap-1 rounded-xl border py-3.5 px-1 text-center"
                   style={
                     picked
-                      ? { background: color.solid, borderColor: color.solid, color: "#fff" }
-                      : { background: color.bg, borderColor: color.bg, color: color.text }
+                      ? { background: "#F2891F", borderColor: "#F2891F", color: "#fff" }
+                      : { background: "#F7F8FA", borderColor: "#F7F8FA", color: "#3D4A66" }
                   }
                 >
                   <span className="text-2xl leading-none">{categoryIcons[c]}</span>
