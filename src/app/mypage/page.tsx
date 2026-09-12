@@ -157,7 +157,9 @@ export default function MyPage() {
   const handleShareRefLink = async () => {
     if (typeof window === "undefined" || !refCode) return;
     const url = `${window.location.origin}/signup?ref=${refCode}`;
-    const text = `점프엑스 덤핑점핑 - 재고 특가 알림 받아보세요! ${url}`;
+    const text = shareDeal
+      ? `[덤핑점핑] ${shareDeal.title} ${formatPrice(shareDeal.deal_price)} 특가! 이런 재고특가 알림 매일 받아보세요 → ${url}`
+      : `점프엑스 덤핑점핑 - 재고 특가 알림 받아보세요! ${url}`;
 
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
