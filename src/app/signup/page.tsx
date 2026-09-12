@@ -267,11 +267,11 @@ function SignupPageInner() {
           카테고리·지역 알림 설정은 마이페이지에서 바꿀 수 있어요.
         </p>
         <Link
-          href="/mypage"
+          href={returnTo || "/mypage"}
           className="text-white text-center font-bold rounded-2xl text-base px-8"
           style={{ background: "linear-gradient(135deg, #D9531E, #F2891F)", padding: "14px 32px" }}
         >
-          마이페이지로 이동
+          {returnTo ? "매물 보러 가기" : "마이페이지로 이동"}
         </Link>
       </main>
     );
