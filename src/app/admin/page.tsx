@@ -99,34 +99,75 @@ function downloadCsv(filename: string, rows: (string | number | null | undefined
   URL.revokeObjectURL(url);
 }
 
+const ADMIN_SESSION_TTL_MS = 6 * 60 * 60 * 1000; // 6시간
+
 export default function AdminPage() {
   const [key, setKey] = useState<string | null>(null);
   const [input, setInput] = useState("");
+  const [adminName, setAdminName] = useState<string | null>(null);
+  const [adminRole, setAdminRole] = useState<string | null>(null);
+  const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loggingIn, setLoggingIn] = useState(false);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("jumpingbid_admin_session");
     if (stored) {
       try {
-        const { key: storedKey, ts } = JSON.parse(stored);
-        const SIX_HOURS = 6 * 60 * 60 * 1000;
-        if (storedKey && Date.now() - ts < SIX_HOURS) setKey(storedKey);
-        else sessionStorage.removeItem("jumpingbid_admin_session");
+        const session = JSON.parse(stored);
+        if (session.key && Date.now() - session.ts < ADMIN_SESSION_TTL_MS) {
+          setKey(session.key);
+          setAdminName(session.name ?? null);
+          setAdminRole(session.role ?? null);
+          setSessionExpiresAt(session.ts + ADMIN_SESSION_TTL_MS);
+        } else {
+          sessionStorage.removeItem("jumpingbid_admin_session");
+        }
       } catch {
         sessionStorage.removeItem("jumpingbid_admin_session");
       }
     }
   }, []);
 
-  const login = () => {
-    sessionStorage.setItem("jumpingbid_admin_session", JSON.stringify({ key: input, ts: Date.now() }));
-    setKey(input);
+  const login = async () => {
+    setLoginError(null);
+    setLoggingIn(true);
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: input }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setLoginError(data.error ?? "로그인에 실패했습니다.");
+        return;
+      }
+      const ts = Date.now();
+      const session = { key: data.token, ts, name: data.admin.name, role: data.admin.role };
+      sessionStorage.setItem("jumpingbid_admin_session", JSON.stringify(session));
+      setKey(data.token);
+      setAdminName(data.admin.name);
+      setAdminRole(data.admin.role);
+      setSessionExpiresAt(ts + ADMIN_SESSION_TTL_MS);
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
+  const logout = () => {
+    sessionStorage.removeItem("jumpingbid_admin_session");
+    setKey(null);
+    setAdminName(null);
+    setAdminRole(null);
+    setSessionExpiresAt(null);
   };
 
   if (!key) {
     return (
       <main className="flex flex-col items-center justify-center min-h-screen px-6">
         <div className="text-2xl mb-4">🔒</div>
-        <h1 className="font-display text-xl text-navy mb-4">관리자 비밀번호</h1>
+        <h1 className="font-display text-xl text-navy mb-4">관리자 로그인</h1>
         <input
           type="password"
           className="w-full max-w-xs border-2 border-gray200 rounded-xl px-4 text-base outline-none focus:border-orange"
@@ -136,18 +177,28 @@ export default function AdminPage() {
           onKeyDown={(e) => e.key === "Enter" && login()}
           placeholder="비밀번호 입력"
         />
+        {loginError && <p className="text-orange text-sm font-medium mt-2">{loginError}</p>}
         <button
           onClick={login}
-          className="w-full max-w-xs mt-3 text-white font-bold rounded-xl text-base"
+          disabled={loggingIn}
+          className="w-full max-w-xs mt-3 text-white font-bold rounded-xl text-base disabled:opacity-60"
           style={{ background: "#0B2540", padding: "14px 0" }}
         >
-          입장
+          {loggingIn ? "확인 중..." : "입장"}
         </button>
       </main>
     );
   }
 
-  return <AdminDashboard adminKey={key} onLogout={() => { sessionStorage.removeItem("jumpingbid_admin_session"); setKey(null); }} />;
+  return (
+    <AdminDashboard
+      adminKey={key}
+      adminName={adminName}
+      adminRole={adminRole}
+      sessionExpiresAt={sessionExpiresAt}
+      onLogout={logout}
+    />
+  );
 }
 
 type Interest = {
@@ -181,7 +232,35 @@ type BuyRequest = {
   regions: { name: string } | null;
 };
 
-function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: () => void }) {
+function SessionCountdown({ expiresAt }: { expiresAt: number }) {
+  const [remaining, setRemaining] = useState(expiresAt - Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setRemaining(expiresAt - Date.now()), 30000);
+    return () => clearInterval(t);
+  }, [expiresAt]);
+  if (remaining <= 0) return null;
+  const h = Math.floor(remaining / 3600000);
+  const m = Math.floor((remaining % 3600000) / 60000);
+  return (
+    <span>
+      세션 {h}시간 {m}분 남음
+    </span>
+  );
+}
+
+function AdminDashboard({
+  adminKey,
+  adminName,
+  adminRole,
+  sessionExpiresAt,
+  onLogout,
+}: {
+  adminKey: string;
+  adminName: string | null;
+  adminRole: string | null;
+  sessionExpiresAt: number | null;
+  onLogout: () => void;
+}) {
   const [requests, setRequests] = useState<SellerRequest[]>([]);
   const [partnerRequests, setPartnerRequests] = useState<PartnerRequest[]>([]);
   const [buyRequests, setBuyRequests] = useState<BuyRequest[]>([]);
@@ -387,6 +466,17 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
             관리자
           </div>
           <h1 className="font-display text-xl mt-1">매물 관리</h1>
+          {adminName && (
+            <div className="text-xs text-white/60 mt-0.5">
+              {adminName} · {adminRole}
+              {sessionExpiresAt && (
+                <>
+                  {" "}
+                  · <SessionCountdown expiresAt={sessionExpiresAt} />
+                </>
+              )}
+            </div>
+          )}
           {interests.filter((i) => !i.contacted).length > 0 && (
             <div className="text-xs font-bold mt-1" style={{ color: "#FF9E7A" }}>
               🔔 미연락 리드 {interests.filter((i) => !i.contacted).length}건

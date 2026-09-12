@@ -44,7 +44,7 @@ export async function PATCH(req: NextRequest) {
 
   const { error: updateError } = await supabaseAdmin
     .from("partner_requests")
-    .update({ status, reviewed_at: new Date().toISOString() })
+    .update({ status, reviewed_at: new Date().toISOString(), reviewed_by: auth.admin.name })
     .eq("id", id);
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
 

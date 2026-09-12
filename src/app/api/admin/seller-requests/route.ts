@@ -41,7 +41,7 @@ export async function PATCH(req: NextRequest) {
   const supabaseAdmin = getAdminClient();
   const { error } = await supabaseAdmin
     .from("seller_requests")
-    .update({ status, linked_deal_id: linkedDealId ?? null })
+    .update({ status, linked_deal_id: linkedDealId ?? null, reviewed_by: auth.admin.name })
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
