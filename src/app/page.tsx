@@ -122,27 +122,27 @@ export default function Home() {
         <InstallAppButton />
       </div>
 
-      <div className="px-5 pt-5">
-        <div className="text-lg font-bold text-navy mb-3.5">어떤 재고를 찾고 계세요?</div>
-        <div className="grid grid-cols-3 gap-2.5">
-          {/* 카드 배경/텍스트는 통일(white + navy)하고, 카테고리 구분은 아이콘 배지 색상만으로
-              — 파스텔 랜덤 배경이 B2C 잡화몰처럼 보이는 것을 방지 */}
+      <div className="pt-5">
+        <div className="px-5 text-lg font-bold text-navy mb-3">어떤 재고를 찾고 계세요?</div>
+        {/* 3x3 그리드(약 300px)가 히어로 직후 화면 절반을 차지해 실제 매물 미리보기가
+            스크롤 없이 안 보이던 문제 — 가로 스크롤 칩 한 줄로 축소. 카테고리 구분은
+            여전히 아이콘 배지 색상만으로(카드 배경은 통일). */}
+        <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-1">
           {mockCategories.map((c) => {
             const color = categoryColors[c];
             return (
               <Link
                 key={c}
                 href={`/deals?category=${encodeURIComponent(c)}`}
-                className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-1.5 text-center bg-white border border-gray200 transition-transform active:scale-95"
-                style={{ minHeight: "92px" }}
+                className="flex items-center gap-1.5 rounded-full py-2 pl-2 pr-3.5 bg-white border border-gray200 whitespace-nowrap flex-shrink-0 active:scale-95 transition-transform"
               >
                 <span
-                  className="flex items-center justify-center w-9 h-9 rounded-full text-lg"
+                  className="flex items-center justify-center w-7 h-7 rounded-full text-sm flex-shrink-0"
                   style={{ background: color.bg }}
                 >
                   {categoryIcons[c]}
                 </span>
-                <span className="text-sm font-bold leading-tight text-navy">{c}</span>
+                <span className="text-sm font-bold text-navy">{c}</span>
               </Link>
             );
           })}
@@ -231,13 +231,9 @@ export default function Home() {
           오늘 등록된 매물 전체 보기 →
         </Link>
 
-        <div className="flex items-center justify-center gap-4 py-3" style={{ borderTop: "1px solid #EEF0F2", borderBottom: "1px solid #EEF0F2" }}>
+        <div className="flex items-center justify-center py-3" style={{ borderTop: "1px solid #EEF0F2", borderBottom: "1px solid #EEF0F2" }}>
           <Link href="/support" className="flex items-center gap-1 text-xs font-bold text-gray500">
             🏛️ 정부지원금
-          </Link>
-          <span className="text-gray200">|</span>
-          <Link href="/logistics" className="flex items-center gap-1 text-xs font-bold text-gray500">
-            🚚 점핑전국물류
           </Link>
         </div>
 
@@ -253,6 +249,23 @@ export default function Home() {
             </div>
           </div>
           <span className="text-xl" style={{ color: "#F2891F" }}>→</span>
+        </Link>
+
+        {/* 전국 화물 배차 — 매물(스팟성)과 달리 상시 반복 수요라 재방문을 만드는
+            리텐션 훅. 판매/구매(둘 다 "매물 등록" 계열)와 성격이 달라서 톤을
+            네이비/블루로 분리해 같은 종류의 액션처럼 뭉개지지 않게 함. */}
+        <Link
+          href="/logistics"
+          className="flex items-center justify-between rounded-2xl"
+          style={{ background: "rgba(11,37,64,0.06)", border: "2px solid #1B3A5C", padding: "16px 20px" }}
+        >
+          <div>
+            <div className="text-base font-black text-navy">🚚 전국 화물 배차 신청</div>
+            <div className="text-xs font-bold mt-0.5" style={{ color: "#1B3A5C" }}>
+              배차는 언제든 3분 컷 · 지금 신청하기
+            </div>
+          </div>
+          <span className="text-xl" style={{ color: "#1B3A5C" }}>→</span>
         </Link>
 
         <Link
