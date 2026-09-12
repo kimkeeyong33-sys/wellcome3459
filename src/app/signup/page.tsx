@@ -382,6 +382,8 @@ function SignupPageInner() {
               {categories.length === mockCategories.length ? "전체 해제" : "전체 선택"}
             </button>
           </label>
+          {/* 홈 화면 컬러톤 정리와 통일: 카테고리별 파스텔 대신, 선택 여부만
+              브랜드 오렌지 단색으로 표현 (미선택 = 중성 회색, 선택 = 오렌지) */}
           <div className="grid grid-cols-3 gap-2">
             {mockCategories.map((c) => {
               const picked = categories.includes(c);

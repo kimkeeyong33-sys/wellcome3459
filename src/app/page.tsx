@@ -7,6 +7,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { formatPrice } from "@/lib/format";
 import SplashScreen from "@/components/SplashScreen";
 import InstallAppButton from "@/components/InstallAppButton";
+import KakaoChannelButton from "@/components/KakaoChannelButton";
 import AdSlot from "@/components/AdSlot";
 import ScrollHint from "@/components/ScrollHint";
 
@@ -118,26 +119,34 @@ export default function Home() {
         <ScrollHint />
       </div>
 
+      {/* 상단은 핵심 전환(회원가입→맞춤 알림)에만 집중 — 카카오톡 채널 추가는
+          같은 "카카오 버튼" 스타일로 나란히 있으면 가입과 중복돼 보여서
+          매물을 먼저 보여준 뒤(아래) 저관여 위치로 옮김. */}
       <div className="px-5 pt-5">
         <InstallAppButton />
       </div>
 
-      <div className="px-5 pt-5">
-        <div className="text-lg font-bold text-navy mb-3.5">어떤 재고를 찾고 계세요?</div>
-        <div className="grid grid-cols-3 gap-2.5">
+      <div className="pt-5">
+        <div className="px-5 text-lg font-bold text-navy mb-3">어떤 재고를 찾고 계세요?</div>
+        {/* 3x3 그리드(약 300px)가 히어로 직후 화면 절반을 차지해 실제 매물 미리보기가
+            스크롤 없이 안 보이던 문제 — 가로 스크롤 칩 한 줄로 축소. 카테고리 구분은
+            여전히 아이콘 배지 색상만으로(카드 배경은 통일). */}
+        <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-1">
           {mockCategories.map((c) => {
             const color = categoryColors[c];
             return (
               <Link
                 key={c}
                 href={`/deals?category=${encodeURIComponent(c)}`}
-                className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-1.5 text-center transition-transform active:scale-95"
-                style={{ background: color.bg, border: `1.5px solid ${color.solid}33`, minHeight: "92px" }}
+                className="flex items-center gap-1.5 rounded-full py-2 pl-2 pr-3.5 bg-white border border-gray200 whitespace-nowrap flex-shrink-0 active:scale-95 transition-transform"
               >
-                <span className="text-3xl leading-none">{categoryIcons[c]}</span>
-                <span className="text-sm font-bold leading-tight" style={{ color: color.text }}>
-                  {c}
+                <span
+                  className="flex items-center justify-center w-7 h-7 rounded-full text-sm flex-shrink-0"
+                  style={{ background: color.bg }}
+                >
+                  {categoryIcons[c]}
                 </span>
+                <span className="text-sm font-bold text-navy">{c}</span>
               </Link>
             );
           })}
@@ -213,55 +222,72 @@ export default function Home() {
         </div>
       )}
 
-      {/* 보조 CTA — 스크롤 영역 안, 메인 CTA는 하단에 고정 */}
-      <div className="mt-9 px-5 flex flex-col gap-3" style={{ paddingBottom: "108px" }}>
+      {/* 카카오톡 채널 추가 — 저관여 위치. 매물(가치)을 먼저 보여준 뒤 배치해서
+          상단의 핵심 가입 CTA와 시각적으로 경쟁하지 않게 함. */}
+      <div className="px-5 pt-6">
+        <KakaoChannelButton />
+      </div>
+
+      {/* 보조 CTA — 스크롤 영역 안, 메인 CTA는 하단에 고정.
+          위계: 둘러보기(텍스트 링크) < 정보성(고스트 pill) < 구매 등록(아웃라인) < 판매 등록(틴트+강조)
+          — 판매 등록(공급 유입)이 플랫폼 성립의 병목이라 시각적으로 가장 강조.
+          정보성 pill을 맨 아래 두면 하단 고정 CTA(무료 알림받기, 총 높이 약 160px)에
+          가려질 수 있어 액션 카드보다 위로 옮기고, 안전 여백도 108→132px로 늘림. */}
+      <div className="mt-9 px-5 flex flex-col gap-3" style={{ paddingBottom: "132px" }}>
         <Link
           href="/deals"
-          className="border-2 text-navy text-center font-bold rounded-2xl text-base"
-          style={{ padding: "15px 0", borderColor: "rgba(11,37,64,0.25)" }}
+          className="text-center text-sm font-bold text-gray500 underline underline-offset-4"
         >
-          오늘 등록된 매물 보기
+          오늘 등록된 매물 전체 보기 →
         </Link>
 
-        <div className="grid grid-cols-2 gap-2.5 mt-1">
-          <Link
-            href="/support"
-            className="text-center font-bold rounded-xl text-sm"
-            style={{ border: "1.5px solid #C7CBD1", color: "#3D4A66", padding: "13px 0" }}
-          >
+        <div className="flex items-center justify-center py-3" style={{ borderTop: "1px solid #EEF0F2", borderBottom: "1px solid #EEF0F2" }}>
+          <Link href="/support" className="flex items-center gap-1 text-xs font-bold text-gray500">
             🏛️ 정부지원금
-          </Link>
-          <Link
-            href="/logistics"
-            className="text-center font-bold rounded-xl text-sm"
-            style={{ border: "1.5px solid #C7CBD1", color: "#3D4A66", padding: "13px 0" }}
-          >
-            🚚 점핑전국물류
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5 mt-2">
-          <Link
-            href="/buy"
-            className="flex flex-col rounded-2xl px-4 py-3.5 bg-white"
-            style={{ border: "2px solid rgba(242,137,31,0.45)" }}
-          >
+        <Link
+          href="/sell"
+          className="flex items-center justify-between rounded-2xl mt-1"
+          style={{ background: "rgba(242,137,31,0.10)", border: "2px solid #F2891F", padding: "16px 20px" }}
+        >
+          <div>
+            <div className="text-base font-black text-navy">📦 재고가 남으셨나요?</div>
+            <div className="text-xs font-bold mt-0.5" style={{ color: "#D9531E" }}>
+              판매 등록은 무료 · 지금 등록하기
+            </div>
+          </div>
+          <span className="text-xl" style={{ color: "#F2891F" }}>→</span>
+        </Link>
+
+        {/* 전국 화물 배차 — 매물(스팟성)과 달리 상시 반복 수요라 재방문을 만드는
+            리텐션 훅. 판매/구매(둘 다 "매물 등록" 계열)와 성격이 달라서 톤을
+            네이비/블루로 분리해 같은 종류의 액션처럼 뭉개지지 않게 함. */}
+        <Link
+          href="/logistics"
+          className="flex items-center justify-between rounded-2xl"
+          style={{ background: "rgba(11,37,64,0.06)", border: "2px solid #1B3A5C", padding: "16px 20px" }}
+        >
+          <div>
+            <div className="text-base font-black text-navy">🚚 전국 화물 배차 신청</div>
+            <div className="text-xs font-bold mt-0.5" style={{ color: "#1B3A5C" }}>
+              배차는 언제든 3분 컷 · 지금 신청하기
+            </div>
+          </div>
+          <span className="text-xl" style={{ color: "#1B3A5C" }}>→</span>
+        </Link>
+
+        <Link
+          href="/buy"
+          className="flex items-center justify-between rounded-2xl bg-white border border-gray200"
+          style={{ padding: "14px 20px" }}
+        >
+          <div>
             <div className="text-sm font-bold text-navy">🔍 이런 재고 찾습니다</div>
-            <div className="text-xs font-bold mt-0.5" style={{ color: "#D9531E" }}>
-              구매 희망 등록 →
-            </div>
-          </Link>
-          <Link
-            href="/sell"
-            className="flex flex-col rounded-2xl px-4 py-3.5 bg-white"
-            style={{ border: "2px solid rgba(242,137,31,0.45)" }}
-          >
-            <div className="text-sm font-bold text-navy">📦 재고가 남으셨나요?</div>
-            <div className="text-xs font-bold mt-0.5" style={{ color: "#D9531E" }}>
-              판매 등록은 무료 →
-            </div>
-          </Link>
-        </div>
+            <div className="text-xs text-gray500 mt-0.5">구매 희망 등록 →</div>
+          </div>
+        </Link>
       </div>
 
       {/* 메인 CTA — 항상 화면 하단에 고정 */}
