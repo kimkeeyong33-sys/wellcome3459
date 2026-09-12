@@ -455,15 +455,13 @@ function AdminDashboard({
         className="px-5 pt-6 pb-5 text-white flex items-center justify-between"
         style={{ background: "#0B2540" }}
       >
-        <Link
-          href="/"
-          className="rounded-lg bg-white/10 px-2 py-1 text-xs text-white hover:bg-white/20"
-        >
-          🏠 홈
-        </Link>
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <Link href="/" className="bg-white rounded-lg px-3.5 py-2.5 inline-block">
+            <Link
+              href="/"
+              className="bg-white rounded-lg px-3.5 py-2.5 inline-block"
+              title="클릭 시 홈으로 이동"
+            >
               <img src="/images/logo.png" alt="덤핑점핑" className="h-8 w-auto" />
             </Link>
             <span className="text-white/70 text-sm tracking-wide">Powered by JumpX</span>
