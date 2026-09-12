@@ -528,11 +528,7 @@ function SignupPageInner() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="font-display text-xl text-navy mb-1.5">
-              {categories.length === 0 && regions.length === 0
-                ? "관심 카테고리와 지역을 골라주세요"
-                : categories.length === 0
-                ? "관심 카테고리를 골라주세요"
-                : "관심 지역을 골라주세요"}
+              관심 카테고리를 골라주세요
             </div>
             <p className="text-sm text-gray500 mb-5 leading-relaxed">
               어떤 매물 알림을 받을지 알아야 딱 맞는 특가만 보내드릴 수 있어요.
