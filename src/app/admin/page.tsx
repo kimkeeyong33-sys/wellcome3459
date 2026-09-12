@@ -67,6 +67,27 @@ function isToday(dateStr: string) {
   );
 }
 
+// 엑셀에서 한글 안 깨지게 BOM 붙여서 CSV 다운로드
+function downloadCsv(filename: string, rows: (string | number | null | undefined)[][]) {
+  const csv = rows
+    .map((row) =>
+      row
+        .map((cell) => {
+          const s = String(cell ?? "");
+          return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+        })
+        .join(",")
+    )
+    .join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function AdminPage() {
   const [key, setKey] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -154,6 +175,8 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
   const [memberFilter, setMemberFilter] = useState<"all" | "business" | "subscribed" | "unsubscribed">("all");
   const [leadFilter, setLeadFilter] = useState<"all" | "uncontacted" | "pending" | "completed" | "no_deal">("all");
   const [leadSearch, setLeadSearch] = useState("");
+  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [bulkProcessing, setBulkProcessing] = useState(false);
 
   const viewBusinessLicense = async (memberId: string) => {
     setLicenseLoadingId(memberId);
@@ -238,6 +261,68 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
     }
     return true;
   });
+
+  const exportMembersCsv = () => {
+    downloadCsv(`members_${new Date().toISOString().slice(0, 10)}.csv`, [
+      ["전화번호", "회원번호", "상호명", "사업자여부", "사업자인증", "구독여부", "카테고리", "지역", "가입일"],
+      ...filteredMembers.map((m) => [
+        m.phone,
+        m.member_no != null ? formatMemberNo(m.member_no) : "",
+        m.company_name ?? "",
+        m.is_business ? "Y" : "N",
+        m.business_verified ? "Y" : "N",
+        m.push_subscribed ? "Y" : "N",
+        m.categories.join("/"),
+        m.regions.join("/"),
+        new Date(m.created_at).toLocaleString("ko-KR"),
+      ]),
+    ]);
+  };
+
+  const exportLeadsCsv = () => {
+    downloadCsv(`leads_${new Date().toISOString().slice(0, 10)}.csv`, [
+      ["번호", "매물명", "연락상태", "결과", "성사금액", "리드유형", "일시"],
+      ...filteredInterests.map((i) => [
+        i.members?.phone ?? i.phone ?? "",
+        i.deals?.title ?? "",
+        i.contacted ? "연락완료" : "미연락",
+        i.outcome === "completed" ? "성사" : i.outcome === "no_deal" ? "불발" : "진행중",
+        i.completed_amount ?? "",
+        i.source === "quick" ? "원클릭" : "회원",
+        new Date(i.created_at).toLocaleString("ko-KR"),
+      ]),
+    ]);
+  };
+
+  const toggleLeadSelected = (id: string) => {
+    setSelectedLeads((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const bulkMarkContacted = async () => {
+    const targets = filteredInterests.filter((i) => selectedLeads.has(i.id) && !i.contacted);
+    if (targets.length === 0) return;
+    setBulkProcessing(true);
+    try {
+      await Promise.all(
+        targets.map((i) =>
+          fetch("/api/admin/interests", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+            body: JSON.stringify({ id: i.id, source: i.source, contacted: true }),
+          })
+        )
+      );
+      setSelectedLeads(new Set());
+      load();
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
 
   if (authError) {
     return (
@@ -334,6 +419,9 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
             </button>
           ))}
         </div>
+        <button onClick={exportMembersCsv} className="self-end text-xs font-bold text-navy underline">
+          CSV 내보내기 ({filteredMembers.length}건)
+        </button>
 
         {!loading && filteredMembers.length === 0 && (
           <div className="text-center text-gray500 py-6 text-sm">
@@ -496,6 +584,31 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
             </button>
           ))}
         </div>
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-1.5 text-xs font-bold text-gray500">
+            <input
+              type="checkbox"
+              checked={filteredInterests.length > 0 && filteredInterests.every((i) => selectedLeads.has(i.id))}
+              onChange={(e) =>
+                setSelectedLeads(e.target.checked ? new Set(filteredInterests.map((i) => i.id)) : new Set())
+              }
+            />
+            전체 선택
+          </label>
+          <button onClick={exportLeadsCsv} className="text-xs font-bold text-navy underline">
+            CSV 내보내기 ({filteredInterests.length}건)
+          </button>
+        </div>
+        {selectedLeads.size > 0 && (
+          <button
+            onClick={bulkMarkContacted}
+            disabled={bulkProcessing}
+            className="text-sm font-bold rounded-xl py-2.5 text-white disabled:opacity-60"
+            style={{ background: "#0B2540" }}
+          >
+            {bulkProcessing ? "처리 중..." : `선택 ${selectedLeads.size}건 연락완료 처리`}
+          </button>
+        )}
 
         {!loading && filteredInterests.length === 0 && (
           <div className="text-center text-gray500 py-6 text-sm">
@@ -518,6 +631,12 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
             }}
           >
             <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={selectedLeads.has(i.id)}
+                onChange={() => toggleLeadSelected(i.id)}
+                className="w-4 h-4 flex-shrink-0"
+              />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <div className="text-sm font-bold text-gray900 truncate">
