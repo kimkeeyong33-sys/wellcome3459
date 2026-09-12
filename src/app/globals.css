@@ -80,3 +80,12 @@ body {
     opacity: 0.6;
   }
 }
+
+/* 홈 화면 카테고리 가로 스크롤 칩 — 스크롤바를 시각적으로 숨김 (기능은 그대로 스와이프 가능) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
