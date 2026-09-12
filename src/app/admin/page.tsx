@@ -150,6 +150,10 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
   const [openFormFor, setOpenFormFor] = useState<string | "new" | null>(null);
   const [authError, setAuthError] = useState(false);
   const [licenseLoadingId, setLicenseLoadingId] = useState<string | null>(null);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [memberFilter, setMemberFilter] = useState<"all" | "business" | "subscribed" | "unsubscribed">("all");
+  const [leadFilter, setLeadFilter] = useState<"all" | "uncontacted" | "pending" | "completed" | "no_deal">("all");
+  const [leadSearch, setLeadSearch] = useState("");
 
   const viewBusinessLicense = async (memberId: string) => {
     setLicenseLoadingId(memberId);
@@ -209,6 +213,31 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
   };
 
   useEffect(load, [adminKey]);
+
+  const filteredMembers = members.filter((m) => {
+    if (memberFilter === "business" && !m.is_business) return false;
+    if (memberFilter === "subscribed" && !m.push_subscribed) return false;
+    if (memberFilter === "unsubscribed" && m.push_subscribed) return false;
+    if (memberSearch) {
+      const q = memberSearch.replace(/-/g, "");
+      const hay = `${m.phone}${m.company_name ?? ""}${m.nickname ?? ""}`.replace(/-/g, "");
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const filteredInterests = interests.filter((i) => {
+    if (leadFilter === "uncontacted" && i.contacted) return false;
+    if (leadFilter === "pending" && i.outcome !== "pending") return false;
+    if (leadFilter === "completed" && i.outcome !== "completed") return false;
+    if (leadFilter === "no_deal" && i.outcome !== "no_deal") return false;
+    if (leadSearch) {
+      const q = leadSearch.replace(/-/g, "");
+      const hay = `${i.members?.phone ?? i.phone ?? ""}${i.deals?.title ?? ""}`.replace(/-/g, "");
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
 
   if (authError) {
     return (
@@ -275,10 +304,43 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
       <div className="px-5 pt-4 flex flex-col gap-3">
         <div className="text-sm font-bold text-gray500">최근 가입 회원 ({members.length}명)</div>
 
-        {!loading && members.length === 0 && (
-          <div className="text-center text-gray500 py-6 text-sm">아직 가입한 회원이 없어요.</div>
+        <input
+          value={memberSearch}
+          onChange={(e) => setMemberSearch(e.target.value)}
+          placeholder="번호/상호명 검색"
+          className="border-2 border-gray200 rounded-xl px-3 text-sm outline-none focus:border-orange"
+          style={{ height: "40px" }}
+        />
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+          {(
+            [
+              { key: "all", label: "전체" },
+              { key: "business", label: "사업자" },
+              { key: "subscribed", label: "구독중" },
+              { key: "unsubscribed", label: "미구독" },
+            ] as const
+          ).map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setMemberFilter(f.key)}
+              className="flex-shrink-0 text-xs font-bold rounded-full px-3 py-1.5"
+              style={
+                memberFilter === f.key
+                  ? { background: "#0B2540", color: "#fff" }
+                  : { background: "#F5F6F8", color: "#6B7480" }
+              }
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {!loading && filteredMembers.length === 0 && (
+          <div className="text-center text-gray500 py-6 text-sm">
+            {members.length === 0 ? "아직 가입한 회원이 없어요." : "검색/필터 결과가 없어요."}
+          </div>
         )}
-        {members.map((m) => (
+        {filteredMembers.map((m) => (
           <div key={m.id} className="bg-white border border-gray200 rounded-2xl px-4 py-3.5">
             <div className="flex items-center justify-between gap-2">
               <div className="text-base font-bold text-gray900">
@@ -403,10 +465,44 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
           </div>
         )}
 
-        {!loading && interests.length === 0 && (
-          <div className="text-center text-gray500 py-6 text-sm">아직 관심 표시가 없어요.</div>
+        <input
+          value={leadSearch}
+          onChange={(e) => setLeadSearch(e.target.value)}
+          placeholder="번호/매물명 검색"
+          className="border-2 border-gray200 rounded-xl px-3 text-sm outline-none focus:border-orange"
+          style={{ height: "40px" }}
+        />
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+          {(
+            [
+              { key: "all", label: "전체" },
+              { key: "uncontacted", label: "미연락" },
+              { key: "pending", label: "진행중" },
+              { key: "completed", label: "성사" },
+              { key: "no_deal", label: "불발" },
+            ] as const
+          ).map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setLeadFilter(f.key)}
+              className="flex-shrink-0 text-xs font-bold rounded-full px-3 py-1.5"
+              style={
+                leadFilter === f.key
+                  ? { background: "#0B2540", color: "#fff" }
+                  : { background: "#F5F6F8", color: "#6B7480" }
+              }
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {!loading && filteredInterests.length === 0 && (
+          <div className="text-center text-gray500 py-6 text-sm">
+            {interests.length === 0 ? "아직 관심 표시가 없어요." : "검색/필터 결과가 없어요."}
+          </div>
         )}
-        {interests.map((i) => (
+        {filteredInterests.map((i) => (
           <div
             key={i.id}
             className="bg-white border rounded-2xl px-4 py-3.5"

@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       "id, phone, is_business, company_name, member_no, referred_by, created_at, business_verified, business_license_path"
     )
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(300);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
