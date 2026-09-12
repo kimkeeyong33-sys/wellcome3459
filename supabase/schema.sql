@@ -365,6 +365,33 @@ $$;
 
 grant execute on function public.log_otp_verify_result(text, boolean) to anon, authenticated;
 
+-- ---------------- 공식 점핑파트너 신청 ----------------
+-- 마이페이지(src/app/mypage/page.tsx)에서 회원이 직접 신청 → 관리자(src/app/api/admin/partner-requests/route.ts)가
+-- 승인/반려. 승인 시에만 members.is_official_partner가 true로 바뀝니다(그 API가 유일한 기록 경로).
+create table if not exists partner_requests (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid not null references members(id) on delete cascade,
+  business_type text not null,
+  channel_info text not null,
+  message text,
+  status text not null default 'pending' check (status in ('pending','approved','rejected')),
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz
+);
+
+alter table members add column if not exists is_official_partner boolean not null default false;
+
+alter table partner_requests enable row level security;
+
+create policy partner_requests_self_insert on partner_requests
+  for insert to authenticated
+  with check (auth.uid() = member_id);
+
+create policy partner_requests_self_select on partner_requests
+  for select to authenticated
+  using (auth.uid() = member_id);
+-- 관리자 조회/승인은 서버(service role) API로만 처리 -> 별도 admin 정책 불필요
+
 -- ---------------- Storage (매물 사진 저장용) ----------------
 -- 아래는 SQL Editor가 아니라 Supabase 대시보드 → Storage 메뉴에서 수동으로 설정하세요:
 -- 1. "New bucket" → 이름: deal-images, Public bucket 체크 (누구나 읽기 가능하게)
