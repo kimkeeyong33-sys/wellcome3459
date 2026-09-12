@@ -34,6 +34,7 @@ function SignupPageInner() {
 
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [alreadyMember, setAlreadyMember] = useState(false);
   const [phone, setPhone] = useState("");
 
   // 휴대폰 SMS 인증 2단계 상태 — 카카오 로그인 대신 schema.sql 설계 원안대로
@@ -75,6 +76,16 @@ function SignupPageInner() {
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!authUserId || !supabase) return;
+    supabase
+      .from("members")
+      .select("id")
+      .eq("id", authUserId)
+      .maybeSingle()
+      .then(({ data }) => setAlreadyMember(Boolean(data)));
+  }, [authUserId]);
 
   const toggle = (list: string[], set: (v: string[]) => void, value: string) => {
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
