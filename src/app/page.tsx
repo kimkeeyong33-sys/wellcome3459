@@ -127,19 +127,24 @@ export default function Home() {
       <div className="px-5 pt-5">
         <div className="text-lg font-bold text-navy mb-3.5">어떤 재고를 찾고 계세요?</div>
         <div className="grid grid-cols-3 gap-2.5">
+          {/* 카드 배경/텍스트는 통일(white + navy)하고, 카테고리 구분은 아이콘 배지 색상만으로
+              — 파스텔 랜덤 배경이 B2C 잡화몰처럼 보이는 것을 방지 */}
           {mockCategories.map((c) => {
             const color = categoryColors[c];
             return (
               <Link
                 key={c}
                 href={`/deals?category=${encodeURIComponent(c)}`}
-                className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-1.5 text-center transition-transform active:scale-95"
-                style={{ background: color.bg, border: `1.5px solid ${color.solid}33`, minHeight: "92px" }}
+                className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-1.5 text-center bg-white border border-gray200 transition-transform active:scale-95"
+                style={{ minHeight: "92px" }}
               >
-                <span className="text-3xl leading-none">{categoryIcons[c]}</span>
-                <span className="text-sm font-bold leading-tight" style={{ color: color.text }}>
-                  {c}
+                <span
+                  className="flex items-center justify-center w-9 h-9 rounded-full text-lg"
+                  style={{ background: color.bg }}
+                >
+                  {categoryIcons[c]}
                 </span>
+                <span className="text-sm font-bold leading-tight text-navy">{c}</span>
               </Link>
             );
           })}
@@ -215,53 +220,49 @@ export default function Home() {
         </div>
       )}
 
-      {/* 보조 CTA — 스크롤 영역 안, 메인 CTA는 하단에 고정 */}
+      {/* 보조 CTA — 스크롤 영역 안, 메인 CTA는 하단에 고정.
+          위계: 둘러보기(텍스트 링크) < 정보성(고스트 pill) < 구매 등록(아웃라인) < 판매 등록(틴트+강조)
+          — 판매 등록(공급 유입)이 플랫폼 성립의 병목이라 시각적으로 가장 강조. */}
       <div className="mt-9 px-5 flex flex-col gap-3" style={{ paddingBottom: "108px" }}>
         <Link
           href="/deals"
-          className="border-2 text-navy text-center font-bold rounded-2xl text-base"
-          style={{ padding: "15px 0", borderColor: "rgba(11,37,64,0.25)" }}
+          className="text-center text-sm font-bold text-gray500 underline underline-offset-4"
         >
-          오늘 등록된 매물 보기
+          오늘 등록된 매물 전체 보기 →
         </Link>
 
-        <div className="grid grid-cols-2 gap-2.5 mt-1">
-          <Link
-            href="/support"
-            className="text-center font-bold rounded-xl text-sm"
-            style={{ border: "1.5px solid #C7CBD1", color: "#3D4A66", padding: "13px 0" }}
-          >
+        <Link
+          href="/sell"
+          className="flex items-center justify-between rounded-2xl mt-1"
+          style={{ background: "rgba(242,137,31,0.10)", border: "2px solid #F2891F", padding: "16px 20px" }}
+        >
+          <div>
+            <div className="text-base font-black text-navy">📦 재고가 남으셨나요?</div>
+            <div className="text-xs font-bold mt-0.5" style={{ color: "#D9531E" }}>
+              판매 등록은 무료 · 지금 등록하기
+            </div>
+          </div>
+          <span className="text-xl" style={{ color: "#F2891F" }}>→</span>
+        </Link>
+
+        <Link
+          href="/buy"
+          className="flex items-center justify-between rounded-2xl bg-white border border-gray200"
+          style={{ padding: "14px 20px" }}
+        >
+          <div>
+            <div className="text-sm font-bold text-navy">🔍 이런 재고 찾습니다</div>
+            <div className="text-xs text-gray500 mt-0.5">구매 희망 등록 →</div>
+          </div>
+        </Link>
+
+        <div className="flex items-center justify-center gap-4 mt-2 pt-4" style={{ borderTop: "1px solid #EEF0F2" }}>
+          <Link href="/support" className="flex items-center gap-1 text-xs font-bold text-gray500">
             🏛️ 정부지원금
           </Link>
-          <Link
-            href="/logistics"
-            className="text-center font-bold rounded-xl text-sm"
-            style={{ border: "1.5px solid #C7CBD1", color: "#3D4A66", padding: "13px 0" }}
-          >
+          <span className="text-gray200">|</span>
+          <Link href="/logistics" className="flex items-center gap-1 text-xs font-bold text-gray500">
             🚚 점핑전국물류
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5 mt-2">
-          <Link
-            href="/buy"
-            className="flex flex-col rounded-2xl px-4 py-3.5 bg-white"
-            style={{ border: "2px solid rgba(242,137,31,0.45)" }}
-          >
-            <div className="text-sm font-bold text-navy">🔍 이런 재고 찾습니다</div>
-            <div className="text-xs font-bold mt-0.5" style={{ color: "#D9531E" }}>
-              구매 희망 등록 →
-            </div>
-          </Link>
-          <Link
-            href="/sell"
-            className="flex flex-col rounded-2xl px-4 py-3.5 bg-white"
-            style={{ border: "2px solid rgba(242,137,31,0.45)" }}
-          >
-            <div className="text-sm font-bold text-navy">📦 재고가 남으셨나요?</div>
-            <div className="text-xs font-bold mt-0.5" style={{ color: "#D9531E" }}>
-              판매 등록은 무료 →
-            </div>
           </Link>
         </div>
       </div>
