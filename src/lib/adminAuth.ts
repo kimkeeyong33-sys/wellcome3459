@@ -1,45 +1,68 @@
 import { NextRequest } from "next/server";
+import crypto from "crypto";
 
-// 서버 인스턴스 메모리 기준 rate limit입니다 — Redis 같은 분산 스토어가 없어서
-// 완벽하진 않지만(콜드스타트/여러 인스턴스에서 리셋될 수 있음), 별도 인프라 없이
-// 무차별 대입 시도에 최소한의 지연을 강제하는 용도입니다.
+const SESSION_TTL_MS = 6 * 60 * 60 * 1000; // 6시간
+const SECRET = process.env.ADMIN_SESSION_SECRET || "dev-secret";
+
+type AdminPayload = { id: string; name: string; role: string; exp: number };
+
+function sign(data: string) {
+  return crypto.createHmac("sha256", SECRET).update(data).digest("base64url");
+}
+
+export function signAdminToken(admin: { id: string; name: string; role: string }) {
+  const payload: AdminPayload = { ...admin, exp: Date.now() + SESSION_TTL_MS };
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  return `${body}.${sign(body)}`;
+}
+
+function verifyAdminToken(token: string): AdminPayload | null {
+  const [body, sig] = token.split(".");
+  if (!body || !sig || sign(body) !== sig) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString()) as AdminPayload;
+    return payload.exp > Date.now() ? payload : null;
+  } catch {
+    return null;
+  }
+}
+
 const attempts = new Map<string, { count: number; blockedUntil: number }>();
 const MAX_ATTEMPTS = 8;
-const BLOCK_MS = 5 * 60 * 1000; // 5분
+const BLOCK_MS = 5 * 60 * 1000;
 
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+export function checkLoginRateLimit(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for") ?? "unknown";
+  const entry = attempts.get(ip);
+  if (entry && entry.blockedUntil > Date.now()) {
+    return { ok: false as const, status: 429, error: "잠시 후 다시 시도해주세요." };
   }
-  return result === 0;
+  return { ok: true as const };
+}
+
+export function recordLoginFailure(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for") ?? "unknown";
+  const entry = attempts.get(ip) ?? { count: 0, blockedUntil: 0 };
+  entry.count += 1;
+  if (entry.count >= MAX_ATTEMPTS) {
+    entry.blockedUntil = Date.now() + BLOCK_MS;
+    entry.count = 0;
+  }
+  attempts.set(ip, entry);
+}
+
+export function clearLoginFailures(req: NextRequest) {
+  attempts.delete(req.headers.get("x-forwarded-for") ?? "unknown");
 }
 
 export function checkAdminAuth(
   req: NextRequest
-): { ok: true } | { ok: false; status: number; error: string } {
-  const password = process.env.ADMIN_PASSWORD;
-  if (!password) return { ok: false, status: 500, error: "관리자 비밀번호가 설정되지 않았습니다." };
-
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const now = Date.now();
-  const entry = attempts.get(ip);
-  if (entry && entry.blockedUntil > now) {
-    const waitSec = Math.ceil((entry.blockedUntil - now) / 1000);
-    return { ok: false, status: 429, error: `너무 많이 틀렸어요. ${waitSec}초 후 다시 시도해주세요.` };
-  }
-
-  const key = req.headers.get("x-admin-key") ?? "";
-  if (timingSafeEqual(key, password)) {
-    attempts.delete(ip);
-    return { ok: true };
-  }
-
-  const nextCount = (entry?.count ?? 0) + 1;
-  attempts.set(ip, {
-    count: nextCount,
-    blockedUntil: nextCount >= MAX_ATTEMPTS ? now + BLOCK_MS : 0,
-  });
-  return { ok: false, status: 401, error: "인증 실패" };
+):
+  | { ok: true; admin: { id: string; name: string; role: string } }
+  | { ok: false; status: number; error: string } {
+  const token = req.headers.get("x-admin-key");
+  if (!token) return { ok: false, status: 401, error: "인증 실패" };
+  const payload = verifyAdminToken(token);
+  if (!payload) return { ok: false, status: 401, error: "인증 실패 또는 세션 만료" };
+  return { ok: true, admin: { id: payload.id, name: payload.name, role: payload.role } };
 }

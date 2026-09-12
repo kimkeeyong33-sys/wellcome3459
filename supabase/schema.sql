@@ -392,6 +392,44 @@ create policy partner_requests_self_select on partner_requests
   using (auth.uid() = member_id);
 -- 관리자 조회/승인은 서버(service role) API로만 처리 -> 별도 admin 정책 불필요
 
+-- ---------------- 관리자 다중 계정 인증 (기존 단일 공유 비밀번호 대체) ----------------
+-- 이전에는 ADMIN_PASSWORD 환경변수 하나를 모든 admin API가 그대로 비교했습니다.
+-- 이제는 admin_users 테이블에 계정별로 해시된 비밀번호를 저장하고, 로그인 성공 시
+-- src/lib/adminAuth.ts가 HMAC 서명된 세션 토큰(x-admin-key 헤더)을 발급합니다 —
+-- 그 세션 토큰만 검증하면 되므로 각 admin API 라우트는 더 이상 비밀번호 자체를
+-- 알 필요가 없습니다. src/app/api/admin/login/route.ts 참고.
+create extension if not exists pgcrypto;
+
+create table if not exists admin_users (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  role text not null default '관리자' check (role in ('최고관리자','관리자')),
+  password_hash text not null,
+  last_login_at timestamptz,
+  created_at timestamptz not null default now()
+);
+alter table admin_users enable row level security;
+-- 정책 없음 = anon/authenticated 완전 차단, service role만 접근 (서버 API에서만 사용)
+
+create or replace function verify_admin_login(p_password text)
+returns table (id uuid, name text, role text)
+language sql
+security definer
+as $$
+  select id, name, role from admin_users
+  where password_hash = crypt(p_password, password_hash)
+  limit 1;
+$$;
+
+alter table partner_requests add column if not exists reviewed_by text;
+alter table seller_requests add column if not exists reviewed_by text;
+
+-- 최초 관리자 계정은 위 마이그레이션 실행 후 Supabase SQL Editor에서 직접,
+-- 한 번만 수동으로 등록하세요 (반복 실행 시 중복 계정이 생기므로 여기 그대로
+-- 두지 않습니다):
+--   insert into admin_users (name, role, password_hash)
+--   values ('담당자 이름', '최고관리자', crypt('원하는 비밀번호', gen_salt('bf')));
+
 -- ---------------- Storage (매물 사진 저장용) ----------------
 -- 아래는 SQL Editor가 아니라 Supabase 대시보드 → Storage 메뉴에서 수동으로 설정하세요:
 -- 1. "New bucket" → 이름: deal-images, Public bucket 체크 (누구나 읽기 가능하게)
