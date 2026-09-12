@@ -544,6 +544,19 @@ export default function MyPage() {
             </button>
           </div>
 
+          {typeof window !== "undefined" && refCode && (
+            <div className="flex flex-col items-center mt-4">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+                  `${window.location.origin}/signup?ref=${refCode}`
+                )}`}
+                alt="추천 링크 QR 코드"
+                className="w-32 h-32 rounded-xl border border-gray200"
+              />
+              <p className="text-xs text-gray500 mt-2">거래처 방문 시 QR로 바로 보여주세요</p>
+            </div>
+          )}
+
           {referrals.length > 0 && (
             <div className="flex flex-col gap-2 mt-3">
               {referrals.map((r, i) => (
